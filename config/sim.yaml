@@ -1,0 +1,11 @@
+cam0:
+  cam_overlaps: [1]
+  camera_model: pinhole
+  distortion_coeffs: [0, 0, 0, 0]
+  distortion_model: radtan
+  intrinsics: [217.49837767463657, 217.49837767463657, 320, 200]
+  resolution: [640, 400]
+  rostopic: /quadrotor/RGBCamera_Down/image_raw
+  T_body_cam:
+    pos: [0.0, 0.0, 0.0]
+    rot: [0.0, 1.0, 0.0, 0.0] # xyzw quaternion
