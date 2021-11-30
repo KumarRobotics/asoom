@@ -15,12 +15,14 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  cv_bridge
+  sensor_msgs
+  geometry_msgs
 )
 
 ## System dependencies are found with CMake's conventions
 find_package(GTSAM REQUIRED)
 find_package(Eigen3 REQUIRED NO_MODULE)
-
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
