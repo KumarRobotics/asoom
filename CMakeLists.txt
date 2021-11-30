@@ -18,7 +18,8 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 ## System dependencies are found with CMake's conventions
-# find_package(Boost REQUIRED COMPONENTS system)
+find_package(GTSAM REQUIRED)
+find_package(Eigen3 REQUIRED NO_MODULE)
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -127,12 +128,21 @@ include_directories(
 ## Declare a C++ library
 add_library(${PROJECT_NAME}
   src/asoom.cpp
+  src/pose_graph.cpp
 )
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
-add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(${PROJECT_NAME} 
+  ${${PROJECT_NAME}_EXPORTED_TARGETS} 
+  ${catkin_EXPORTED_TARGETS}
+)
+
+target_link_libraries(${PROJECT_NAME}
+  gtsam
+  Eigen3::Eigen
+)
 
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
