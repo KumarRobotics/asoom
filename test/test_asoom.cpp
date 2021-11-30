@@ -1,8 +1,6 @@
-// Bring in gtest
 #include <gtest/gtest.h>
 
-// Declare a test
-TEST(ASOOM_test, test_test) {
+TEST(ASOOM_test, test_gtest) {
   ASSERT_TRUE(true);
 }
 
