@@ -16,8 +16,8 @@ TEST(ASOOM_pose_graph_test, test_two_nodes) {
   EXPECT_EQ(ind, 1);
 
   // Test optimization
-  EXPECT_FLOAT_EQ(pg->getPoseAtIndex(0).translation()[0], 1);
-  EXPECT_FLOAT_EQ(pg->getPoseAtIndex(1).translation()[0], 2);
+  EXPECT_FLOAT_EQ(pg->getPoseAtIndex(0).translation()[0], 0);
+  EXPECT_FLOAT_EQ(pg->getPoseAtIndex(1).translation()[0], 1);
   pg->update();
   EXPECT_FLOAT_EQ(pg->getPoseAtIndex(0).translation()[0], 0);
   EXPECT_FLOAT_EQ(pg->getPoseAtIndex(1).translation()[0], 1);
@@ -49,8 +49,8 @@ TEST(ASOOM_pose_graph_test, test_gps) {
   pg->addGPS(20, Eigen::Vector3d(20,0,0));
 
   // Test optimization
-  EXPECT_FLOAT_EQ(pg->getPoseAtIndex(0).translation()[0], 1);
-  EXPECT_FLOAT_EQ(pg->getPoseAtIndex(1).translation()[0], 2);
+  EXPECT_FLOAT_EQ(pg->getPoseAtIndex(0).translation()[0], 0);
+  EXPECT_FLOAT_EQ(pg->getPoseAtIndex(1).translation()[0], 1);
   pg->update();
   EXPECT_FLOAT_EQ(pg->getPoseAtIndex(0).translation()[0], 10);
   EXPECT_FLOAT_EQ(pg->getPoseAtIndex(1).translation()[0], 20);
@@ -84,15 +84,57 @@ TEST(ASOOM_pose_graph_test, test_gps_rot) {
   pg->addGPS(30, Eigen::Vector3d(30,0,0));
 
   // Test optimization
-  EXPECT_FLOAT_EQ(pg->getPoseAtIndex(0).translation()[0], 1);
-  EXPECT_FLOAT_EQ(pg->getPoseAtIndex(1).translation()[0], 2);
-  EXPECT_FLOAT_EQ(pg->getPoseAtIndex(2).translation()[0], 3);
+  EXPECT_FLOAT_EQ(pg->getPoseAtIndex(0).translation()[0], 0);
+  EXPECT_FLOAT_EQ(pg->getPoseAtIndex(1).translation()[0], 1);
+  EXPECT_FLOAT_EQ(pg->getPoseAtIndex(2).translation()[0], 2);
   pg->update();
   EXPECT_FLOAT_EQ(pg->getPoseAtIndex(0).translation()[0], 10);
   EXPECT_FLOAT_EQ(pg->getPoseAtIndex(1).translation()[0], 20);
   EXPECT_FLOAT_EQ(pg->getPoseAtIndex(2).translation()[0], 30);
 
   EXPECT_FLOAT_EQ(pg->getScale(), 10);
+  EXPECT_NEAR(pg->getError(), 0, 0.00001);
+}
+
+TEST(ASOOM_pose_graph_test, test_init) {
+  auto pg = std::make_unique<PoseGraph>();
+  ASSERT_TRUE(pg);
+
+  Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
+  // Make starting point not at 0,0,0 so optimizer does something
+  pose.translate(Eigen::Vector3d(1,0,0)); 
+  size_t ind = pg->addFrame(10, pose);
+  EXPECT_EQ(ind, 0);
+
+  pose.translate(Eigen::Vector3d(1,0,0)); 
+  ind = pg->addFrame(20, pose);
+  EXPECT_EQ(ind, 1);
+
+  // GPS priors rotate entire pose set
+  pg->addGPS(10, Eigen::Vector3d(0,10,0));
+  pg->addGPS(20, Eigen::Vector3d(0,20,0));
+
+  // Test optimization
+  EXPECT_FLOAT_EQ(pg->getPoseAtIndex(0).translation()[0], 0);
+  EXPECT_FLOAT_EQ(pg->getPoseAtIndex(1).translation()[0], 1);
+  pg->update();
+  EXPECT_FLOAT_EQ(pg->getPoseAtIndex(0).translation()[1], 10);
+  EXPECT_FLOAT_EQ(pg->getPoseAtIndex(1).translation()[1], 20);
+  EXPECT_NEAR(Eigen::Quaterniond(pg->getPoseAtIndex(0).rotation()).w(), 0.7071, 0.001);
+  EXPECT_NEAR(Eigen::Quaterniond(pg->getPoseAtIndex(0).rotation()).z(), 0.7071, 0.001);
+  EXPECT_NEAR(Eigen::Quaterniond(pg->getPoseAtIndex(1).rotation()).w(), 0.7071, 0.001);
+  EXPECT_NEAR(Eigen::Quaterniond(pg->getPoseAtIndex(1).rotation()).z(), 0.7071, 0.001);
+
+  EXPECT_FLOAT_EQ(pg->getScale(), 10);
+  EXPECT_NEAR(pg->getError(), 0, 0.00001);
+
+  // Add new pose, take into account current estimates
+  pose.translate(Eigen::Vector3d(1,0,0)); 
+  ind = pg->addFrame(30, pose);
+  EXPECT_EQ(ind, 2);
+  EXPECT_FLOAT_EQ(pg->getPoseAtIndex(2).translation()[1], 30);
+  EXPECT_NEAR(Eigen::Quaterniond(pg->getPoseAtIndex(2).rotation()).w(), 0.7071, 0.001);
+  EXPECT_NEAR(Eigen::Quaterniond(pg->getPoseAtIndex(2).rotation()).z(), 0.7071, 0.001);
   EXPECT_NEAR(pg->getError(), 0, 0.00001);
 }
 

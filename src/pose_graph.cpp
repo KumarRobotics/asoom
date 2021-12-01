@@ -20,14 +20,18 @@ size_t PoseGraph::addFrame(long stamp, const Eigen::Isometry3d& pose) {
     auto diff = most_recent_pose->pose.inverse() * pose;
     graph_->emplace_shared<gtsam::BetweenPoseScaleFactor>(most_recent_pose->key, P(size_), S(0), Eigen2GTSAM(diff),
         gtsam::noiseModel::Diagonal::Sigmas(gtsam::Vector6::Ones(6, 1)*0.1));
+    // Use current optimization estimates to improve initial guess
+    diff.translation() *= getScale();
+    auto most_recent_pose_opt = GTSAM2Eigen(current_opt_.at<gtsam::Pose3>(most_recent_pose->key));
+    current_opt_.insert(P(size_), Eigen2GTSAM(most_recent_pose_opt * diff));
   } else {
     // Create prior on first pose to remove free degree of freedom until GPS installed
     initial_pose_factor_id_ = graph_->size();
     graph_->emplace_shared<gtsam::PriorFactor<gtsam::Pose3>>(P(size_), Eigen2GTSAM(Eigen::Isometry3d::Identity()),
         gtsam::noiseModel::Constrained::All(6));
+    current_opt_.insert(P(size_), Eigen2GTSAM(Eigen::Isometry3d::Identity()));
   }
   pose_history_.emplace(stamp, std::make_shared<OriginalPose>(pose, P(size_)));
-  current_opt_.insert(P(size_), Eigen2GTSAM(pose));
   size_++;
   return size_ - 1;
 }
@@ -42,11 +46,14 @@ void PoseGraph::addGPS(long stamp, const Eigen::Vector3d& utm_pose) {
     current_opt_.update(S(0), getScale() + 0.001);
   }
 
-  // For now, assume we have exact time
-  if (pose_history_.find(stamp) == pose_history_.end()) return;
-  auto key = pose_history_.find(stamp)->second->key;
-  graph_->emplace_shared<gtsam::GPSFactor>(key, utm_pose,
-      gtsam::noiseModel::Diagonal::Sigmas(gtsam::Vector3::Ones(6, 1)*0.1));
+  if (pose_history_.find(stamp) == pose_history_.end()) {
+    // GPS does not align, need to interpolate
+  } else {
+    // GPS stamp aligns perfectly, great!
+    auto key = pose_history_.find(stamp)->second->key;
+    graph_->emplace_shared<gtsam::GPSFactor>(key, utm_pose,
+        gtsam::noiseModel::Diagonal::Sigmas(gtsam::Vector3::Ones(6, 1)*0.1));
+  }
 }
 
 void PoseGraph::update() {

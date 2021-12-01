@@ -99,7 +99,7 @@ namespace gtsam {
         *H3 = Matrix::Zero(6, 1);
         // essentially the derivative of h - z*scale = -z, but
         // we first transform translation into global frame
-        (*H3).block<3,1>(3,0) = -measured_.rotation().inverse().rotate(measured_.translation());
+        (*H3).block<3,1>(3,0) = -hx.rotation().inverse().rotate(measured_.translation());
       }
       return rval;
     }
