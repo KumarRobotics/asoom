@@ -30,9 +30,9 @@ class PoseGraph {
      * Add GPS factor to graph.  Automatically linearly interpolates
      *
      * @param stamp Timestamp in nsec
-     * @param gps_pose GPS pose in UTM coordinates
+     * @param gps_pose GPS pos in UTM coordinates
      */
-    void addGPS(long stamp, const Eigen::Vector3d& utm_pose);
+    void addGPS(long stamp, const Eigen::Vector3d& utm_pos);
 
     //! Run gtsam optimization
     void update();
@@ -69,6 +69,20 @@ class PoseGraph {
     double getError() const;
   private:
     /*!
+     * Add GPS Factors off of the buffer
+     */
+    void processGPSBuffer();
+
+    /*!
+     * Internal method to handle adding factor, including factor counts
+     *
+     * @param key Key of Pose node to attach GPS factor to
+     * @param utm_pos GPS postition in UTM coord
+     * @param sigma Position uncertainty
+     */
+    void addGPSFactor(const gtsam::Key& key, const Eigen::Vector3d& utm_pos, float sigma);
+
+    /*!
      * Convert GTSAM pose to Eigen
      */
     inline static gtsam::Pose3 Eigen2GTSAM(const Eigen::Isometry3d& eigen_pose) {
@@ -97,8 +111,14 @@ class PoseGraph {
     //! Map to keep track of timestamp to original poses
     std::map<long, std::shared_ptr<OriginalPose>> pose_history_;
 
+    //! Map to keep track of timestamp to GPS locations
+    std::map<long, std::shared_ptr<Eigen::Vector3d>> gps_buffer_;
+
     //! Number of frames in graph
     size_t size_;
+
+    //! Number of GPS factors in graph
+    size_t gps_factor_count_;
     
     //! Index of initial origin factor before GPS
     int initial_pose_factor_id_;

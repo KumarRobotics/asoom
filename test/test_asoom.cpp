@@ -138,7 +138,42 @@ TEST(ASOOM_pose_graph_test, test_init) {
   EXPECT_NEAR(pg->getError(), 0, 0.00001);
 }
 
-int main(int argc, char **argv){
+TEST(ASOOM_pose_graph_test, test_gps_bracket) {
+  auto pg = std::make_unique<PoseGraph>();
+  ASSERT_TRUE(pg);
+
+  pg->addGPS(4, Eigen::Vector3d(100,0,0));
+  pg->addGPS(8, Eigen::Vector3d(8,0,0));
+  pg->addGPS(15, Eigen::Vector3d(15,0,0));
+
+  Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
+  // Make starting point not at 0,0,0 so optimizer does something
+  pose.translate(Eigen::Vector3d(1,0,0)); 
+  size_t ind = pg->addFrame(10, pose);
+  EXPECT_EQ(ind, 0);
+
+  pose.translate(Eigen::Vector3d(1,0,0)); 
+  ind = pg->addFrame(20, pose);
+  EXPECT_EQ(ind, 1);
+
+  // Test optimization
+  EXPECT_FLOAT_EQ(pg->getPoseAtIndex(0).translation()[0], 0);
+  EXPECT_FLOAT_EQ(pg->getPoseAtIndex(1).translation()[0], 1);
+  pg->update();
+  EXPECT_FLOAT_EQ(pg->getPoseAtIndex(0).translation()[0], 10);
+  EXPECT_FLOAT_EQ(pg->getPoseAtIndex(1).translation()[0], 11);
+  EXPECT_FLOAT_EQ(pg->getScale(), 1);
+
+  pg->addGPS(21, Eigen::Vector3d(21,0,0));
+  pg->update();
+  EXPECT_FLOAT_EQ(pg->getPoseAtIndex(0).translation()[0], 10);
+  EXPECT_FLOAT_EQ(pg->getPoseAtIndex(1).translation()[0], 20);
+
+  EXPECT_FLOAT_EQ(pg->getScale(), 10);
+  EXPECT_NEAR(pg->getError(), 0, 0.00001);
+}
+
+int main(int argc, char **argv) {
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

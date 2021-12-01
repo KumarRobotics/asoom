@@ -4,9 +4,10 @@
 #include "asoom/pose_graph.h"
 #include "asoom/between_pose_scale_factor.h"
 
-PoseGraph::PoseGraph() : size_(0), initial_pose_factor_id_(-1) {
+PoseGraph::PoseGraph() : size_(0), initial_pose_factor_id_(-1), gps_factor_count_(0) {
   graph_ = std::make_unique<gtsam::NonlinearFactorGraph>();
   current_opt_.insert(S(0), 1.0);
+
   // Create prior on scale initially because otherwise unconstrained
   initial_scale_factor_id_ = graph_->size();
   graph_->emplace_shared<gtsam::PriorFactor<double>>(S(0), 1.0,
@@ -19,7 +20,8 @@ size_t PoseGraph::addFrame(long stamp, const Eigen::Isometry3d& pose) {
     auto most_recent_pose = pose_history_.rbegin()->second;
     auto diff = most_recent_pose->pose.inverse() * pose;
     graph_->emplace_shared<gtsam::BetweenPoseScaleFactor>(most_recent_pose->key, P(size_), S(0), Eigen2GTSAM(diff),
-        gtsam::noiseModel::Diagonal::Sigmas(gtsam::Vector6::Ones(6, 1)*0.1));
+        gtsam::noiseModel::Diagonal::Sigmas(gtsam::Vector6::Ones()*0.1));
+
     // Use current optimization estimates to improve initial guess
     diff.translation() *= getScale();
     auto most_recent_pose_opt = GTSAM2Eigen(current_opt_.at<gtsam::Pose3>(most_recent_pose->key));
@@ -33,30 +35,74 @@ size_t PoseGraph::addFrame(long stamp, const Eigen::Isometry3d& pose) {
   }
   pose_history_.emplace(stamp, std::make_shared<OriginalPose>(pose, P(size_)));
   size_++;
+  processGPSBuffer();
   return size_ - 1;
 }
 
-void PoseGraph::addGPS(long stamp, const Eigen::Vector3d& utm_pose) {
-  if (graph_->exists(initial_pose_factor_id_)) {
-    graph_->remove(initial_pose_factor_id_);
-  }
-  if (graph_->exists(initial_scale_factor_id_)) {
-    graph_->remove(initial_scale_factor_id_);
-    // Perturb scale to make optimizer not get stuck
-    current_opt_.update(S(0), getScale() + 0.001);
-  }
+void PoseGraph::addGPS(long stamp, const Eigen::Vector3d& utm_pos) {
+  // We buffer GPS measurements because we might get several GPS messages
+  // and not get the frame to go between them for a while
+  gps_buffer_.emplace(stamp, std::make_shared<Eigen::Vector3d>(utm_pos));
+  processGPSBuffer();
+}
 
-  if (pose_history_.find(stamp) == pose_history_.end()) {
-    // GPS does not align, need to interpolate
-  } else {
-    // GPS stamp aligns perfectly, great!
-    auto key = pose_history_.find(stamp)->second->key;
-    graph_->emplace_shared<gtsam::GPSFactor>(key, utm_pose,
-        gtsam::noiseModel::Diagonal::Sigmas(gtsam::Vector3::Ones(6, 1)*0.1));
+void PoseGraph::processGPSBuffer() {
+  for (auto gps_it = gps_buffer_.begin(); gps_it != gps_buffer_.end();) {
+    auto target_frame_it = pose_history_.lower_bound(gps_it->first);
+    // All poses are older than GPS
+    if (target_frame_it == pose_history_.end()) return;
+
+    if (target_frame_it->first == gps_it->first) {
+      // GPS stamp aligns perfectly, great!
+      addGPSFactor(target_frame_it->second->key, *(gps_it)->second, 0.1);
+    } else {
+      auto gps_next_it = std::next(gps_it);
+      if (gps_next_it != gps_buffer_.end()) {
+        double after_t_diff = gps_next_it->first - target_frame_it->first;
+        double before_t_diff = target_frame_it->first - gps_it->first;
+
+        // before_t_diff has to be >= 0, if after is <= 0 then we want to check next pair
+        if (after_t_diff > 0) {
+          // bracket, assemble
+          auto after_pose = gps_next_it->second;
+          auto before_pose = gps_it->second;
+
+          double diff_sum = after_t_diff + before_t_diff;
+          Eigen::Vector3d pos_interp = 
+              ((*after_pose * before_t_diff) + (*before_pose * after_t_diff)) / diff_sum;
+
+          addGPSFactor(target_frame_it->second->key, pos_interp, 0.1);
+        }
+      } else {
+        // We are on the last element, return so we don't erase
+        return;
+      }
+    }
+
+    // Wipe old history, don't make duplicate factors
+    // Also serves to advance the loop
+    gps_it = gps_buffer_.erase(gps_it);
   }
 }
 
+void PoseGraph::addGPSFactor(const gtsam::Key& key, const Eigen::Vector3d& utm_pos, float sigma) {
+  if (graph_->exists(initial_pose_factor_id_)) {
+    graph_->remove(initial_pose_factor_id_);
+  }
+  if (graph_->exists(initial_scale_factor_id_) && gps_factor_count_ > 0) {
+    // Takes 2 GPS constraints to determine scale
+    graph_->remove(initial_scale_factor_id_);
+  }
+
+  graph_->emplace_shared<gtsam::GPSFactor>(key, utm_pos,
+      gtsam::noiseModel::Diagonal::Sigmas(gtsam::Vector3::Ones()*sigma));
+  gps_factor_count_++;
+}
+
 void PoseGraph::update() {
+  // Perturb scale to make optimizer not get stuck
+  current_opt_.update(S(0), getScale() + 0.0001);
+
   gtsam::LevenbergMarquardtParams opt_params;
   gtsam::LevenbergMarquardtOptimizer opt(*graph_, current_opt_, opt_params);
   current_opt_ = opt.optimize();
