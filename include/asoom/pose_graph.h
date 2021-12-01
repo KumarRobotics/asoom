@@ -8,6 +8,7 @@
 #include <Eigen/Dense>
 
 using gtsam::symbol_shorthand::P;
+using gtsam::symbol_shorthand::S;
 
 /*!
  * Wrapper for GTSAM Pose Graph
@@ -61,6 +62,11 @@ class PoseGraph {
      * @return Number of nodes in graph
      */
     size_t size() const;
+
+    /*!
+     * @return Current error in graph
+     */
+    double getError() const;
   private:
     /*!
      * Convert GTSAM pose to Eigen
@@ -96,5 +102,8 @@ class PoseGraph {
     
     //! Index of initial origin factor before GPS
     int initial_pose_factor_id_;
+
+    //! Index of initial scale factor before GPS
+    int initial_scale_factor_id_;
 };
 
