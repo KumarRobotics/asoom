@@ -82,14 +82,13 @@ namespace gtsam {
     /** vector of errors */
     Vector evaluateError(const Pose3& p1, const Pose3& p2, const double& scale, boost::optional<Matrix&> H1 =
       boost::none, boost::optional<Matrix&> H2 = boost::none, boost::optional<Matrix&> H3 = boost::none) const {
-      // scale in advance so H1, H2 are in scale-free space
-      Pose3 p1_scaled(p1.rotation(), p1.translation() / scale);
-      Pose3 p2_scaled(p2.rotation(), p2.translation() / scale);
+      // scale measurement into real world space
+      Pose3 measured_scaled(measured_.rotation(), measured_.translation() * scale);
 
-      Pose3 hx = traits<Pose3>::Between(p1_scaled, p2_scaled, H1, H2); // h(x)/scale
+      Pose3 hx = traits<Pose3>::Between(p1, p2, H1, H2); // h(x)/scale
       // manifold equivalent of h(x)-z -> log(z,h(x))
       typename traits<Pose3>::ChartJacobian::Jacobian Hlocal;
-      Vector rval = traits<Pose3>::Local(measured_, hx, boost::none, (H1 || H2) ? &Hlocal : 0);
+      Vector rval = traits<Pose3>::Local(measured_scaled, hx, boost::none, (H1 || H2) ? &Hlocal : 0);
       if (H1) {
         *H1 = Hlocal * (*H1);
       }
@@ -98,9 +97,9 @@ namespace gtsam {
       }
       if (H3) {
         *H3 = Matrix::Zero(6, 1);
-        // essentially the derivative of h/scale - z = -h/scale^2, but
-        // hx is already h/scale, and we first transform translation into global frame
-        (*H3).block<3,1>(3,0) = -hx.rotation().inverse().rotate(hx.translation()) / scale;
+        // essentially the derivative of h - z*scale = -z, but
+        // we first transform translation into global frame
+        (*H3).block<3,1>(3,0) = -measured_.rotation().inverse().rotate(measured_.translation());
       }
       return rval;
     }
