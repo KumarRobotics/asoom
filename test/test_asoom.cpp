@@ -2,7 +2,7 @@
 #include "asoom/pose_graph.h"
 
 TEST(ASOOM_pose_graph_test, test_two_nodes) {
-  auto pg = std::make_unique<PoseGraph>();
+  auto pg = std::make_unique<PoseGraph>(Eigen::Vector6d::Ones()*0.1, Eigen::Vector3d::Ones()*0.1);
   ASSERT_TRUE(pg);
 
   Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
@@ -32,7 +32,7 @@ TEST(ASOOM_pose_graph_test, test_two_nodes) {
 }
 
 TEST(ASOOM_pose_graph_test, test_gps) {
-  auto pg = std::make_unique<PoseGraph>();
+  auto pg = std::make_unique<PoseGraph>(Eigen::Vector6d::Ones()*0.1, Eigen::Vector3d::Ones()*0.1);
   ASSERT_TRUE(pg);
 
   Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
@@ -60,7 +60,7 @@ TEST(ASOOM_pose_graph_test, test_gps) {
 }
 
 TEST(ASOOM_pose_graph_test, test_gps_rot) {
-  auto pg = std::make_unique<PoseGraph>();
+  auto pg = std::make_unique<PoseGraph>(Eigen::Vector6d::Ones()*0.1, Eigen::Vector3d::Ones()*0.1);
   ASSERT_TRUE(pg);
 
   Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
@@ -97,7 +97,7 @@ TEST(ASOOM_pose_graph_test, test_gps_rot) {
 }
 
 TEST(ASOOM_pose_graph_test, test_init) {
-  auto pg = std::make_unique<PoseGraph>();
+  auto pg = std::make_unique<PoseGraph>(Eigen::Vector6d::Ones()*0.1, Eigen::Vector3d::Ones()*0.1);
   ASSERT_TRUE(pg);
 
   Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
@@ -139,7 +139,7 @@ TEST(ASOOM_pose_graph_test, test_init) {
 }
 
 TEST(ASOOM_pose_graph_test, test_gps_bracket) {
-  auto pg = std::make_unique<PoseGraph>();
+  auto pg = std::make_unique<PoseGraph>(Eigen::Vector6d::Ones()*0.1, Eigen::Vector3d::Ones()*0.1);
   ASSERT_TRUE(pg);
 
   pg->addGPS(4, Eigen::Vector3d(100,0,0));
@@ -171,6 +171,33 @@ TEST(ASOOM_pose_graph_test, test_gps_bracket) {
 
   EXPECT_FLOAT_EQ(pg->getScale(), 10);
   EXPECT_NEAR(pg->getError(), 0, 0.00001);
+}
+
+TEST(ASOOM_pose_graph_test, test_cov) {
+  auto pg = std::make_unique<PoseGraph>(Eigen::Vector6d::Ones()*0.1, Eigen::Vector3d::Zero(),
+      Eigen::Vector3d::Ones()*0.1, true);
+  ASSERT_TRUE(pg);
+
+  Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
+
+  pose.translate(Eigen::Vector3d(1,0,0)); 
+  size_t ind = pg->addFrame(10e9, pose);
+  pg->addGPS(10e9, Eigen::Vector3d(1,0,0));
+  EXPECT_EQ(ind, 0);
+
+  pg->addGPS(19e9, Eigen::Vector3d(2,0,0));
+  pose.translate(Eigen::Vector3d(1,0,0)); 
+  ind = pg->addFrame(20e9, pose);
+  EXPECT_EQ(ind, 1);
+  pg->addGPS(25e9, Eigen::Vector3d(3,0,0));
+
+  // Test optimization
+  EXPECT_FLOAT_EQ(pg->getPoseAtIndex(0).translation()[0], 0);
+  EXPECT_FLOAT_EQ(pg->getPoseAtIndex(1).translation()[0], 1);
+  pg->update();
+  EXPECT_FLOAT_EQ(pg->getPoseAtIndex(0).translation()[0], 1);
+  EXPECT_NEAR(pg->getPoseAtIndex(1).translation()[0], 2.1, 0.05);
+  EXPECT_FLOAT_EQ(pg->getScale(), 1);
 }
 
 int main(int argc, char **argv) {

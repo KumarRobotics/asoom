@@ -10,20 +10,37 @@
 using gtsam::symbol_shorthand::P;
 using gtsam::symbol_shorthand::S;
 
+namespace Eigen {
+  using Vector6d = Matrix<double, 6, 1>;
+}
+
 /*!
  * Wrapper for GTSAM Pose Graph
  */
 class PoseGraph {
   public:
-    PoseGraph();
+    /*!
+     * Constructor for PoseGraph
+     *
+     * @param between_sigmas Default sigmas for between factors
+     * @param gps_sigmas Default sigmas for GPS factors
+     * @param fix_scale If true, do not optimize scale.  False by default
+     */
+    PoseGraph(const Eigen::Vector6d& between_sigmas, const Eigen::Vector3d& gps_sigmas, 
+        const Eigen::Vector3d& gps_sigma_per_sec = Eigen::Vector3d::Zero(), bool fix_scale = false);
 
     /*!
      * Create new image frame in the pose graph
      *
      * @param stamp Timestamp in nsec
      * @param pose Pose of image as computed by VO up to scale
+     * @param sigmas Sigmas for diagonal covariance
      * @return ID number of the new frame in the graph
      */
+    size_t addFrame(long stamp, const Eigen::Isometry3d& pose, 
+        const Eigen::Vector6d& sigmas);
+
+    //* Overloaded version with default sigmas
     size_t addFrame(long stamp, const Eigen::Isometry3d& pose);
 
     /*!
@@ -68,6 +85,10 @@ class PoseGraph {
      */
     double getError() const;
   private:
+    /***********************************************************
+     * LOCAL FUNCTIONS
+     ***********************************************************/
+
     /*!
      * Add GPS Factors off of the buffer
      */
@@ -80,7 +101,8 @@ class PoseGraph {
      * @param utm_pos GPS postition in UTM coord
      * @param sigma Position uncertainty
      */
-    void addGPSFactor(const gtsam::Key& key, const Eigen::Vector3d& utm_pos, float sigma);
+    void addGPSFactor(const gtsam::Key& key, const Eigen::Vector3d& utm_pos, 
+        const Eigen::Vector3d& sigma);
 
     /*!
      * Convert GTSAM pose to Eigen
@@ -95,6 +117,29 @@ class PoseGraph {
     inline static Eigen::Isometry3d GTSAM2Eigen(const gtsam::Pose3& gtsam_pose) {
       return Eigen::Isometry3d(gtsam_pose.matrix());
     }
+
+    /***********************************************************
+     * LOCAL CONSTANTS
+     ***********************************************************/
+
+    //! Vector of diagonal sigmas for GPS factors
+    const Eigen::Vector3d gps_sigmas_;
+
+    /*!
+     * Vector of diagonal sigmas for GPS multiplied with time
+     * Related to quality of interpolation
+     */
+    const Eigen::Vector3d gps_sigma_per_sec_;
+
+    //! Vector of diagonal sigmas for between factors from VO
+    const Eigen::Matrix<double, 6, 1> between_sigmas_;
+
+    //! Whether or not to fix scale (e.g. VIO or stereo) or allow GTSAM to optimize (mono VO)
+    const bool fix_scale_;
+    
+    /***********************************************************
+     * LOCAL VARIABLES
+     ***********************************************************/
 
     //! Pointer to gtsam factor graph
     std::unique_ptr<gtsam::NonlinearFactorGraph> graph_;

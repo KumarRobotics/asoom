@@ -1,1 +1,6 @@
-// High level manager class
+#include "asoom/asoom.h"
+
+ASOOM::ASOOM() {
+}
+
+
