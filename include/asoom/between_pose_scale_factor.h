@@ -98,8 +98,8 @@ namespace gtsam {
       }
       if (H3) {
         *H3 = Matrix::Zero(6, 1);
-        // essentially the derivative of h/scale - z = -h/scale^2 - z, but
-        // hx is already h/scale, and we transform first
+        // essentially the derivative of h/scale - z = -h/scale^2, but
+        // hx is already h/scale, and we first transform translation into global frame
         (*H3).block<3,1>(3,0) = -hx.rotation().inverse().rotate(hx.translation()) / scale;
       }
       return rval;

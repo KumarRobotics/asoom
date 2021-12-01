@@ -6,12 +6,11 @@
 
 PoseGraph::PoseGraph() : size_(0), initial_pose_factor_id_(-1) {
   graph_ = std::make_unique<gtsam::NonlinearFactorGraph>();
-  // Initialize scale, slightly off of 1.0 to make optimizer not get stuck
-  current_opt_.insert(S(0), 1.001);
+  current_opt_.insert(S(0), 1.0);
   // Create prior on scale initially because otherwise unconstrained
   initial_scale_factor_id_ = graph_->size();
   graph_->emplace_shared<gtsam::PriorFactor<double>>(S(0), 1.0,
-      gtsam::noiseModel::Diagonal::Sigmas(gtsam::Vector1::Zero()));
+      gtsam::noiseModel::Constrained::All(1));
 }
 
 size_t PoseGraph::addFrame(long stamp, const Eigen::Isometry3d& pose) {
@@ -25,7 +24,7 @@ size_t PoseGraph::addFrame(long stamp, const Eigen::Isometry3d& pose) {
     // Create prior on first pose to remove free degree of freedom until GPS installed
     initial_pose_factor_id_ = graph_->size();
     graph_->emplace_shared<gtsam::PriorFactor<gtsam::Pose3>>(P(size_), Eigen2GTSAM(Eigen::Isometry3d::Identity()),
-        gtsam::noiseModel::Diagonal::Sigmas(gtsam::Vector6::Zero()));
+        gtsam::noiseModel::Constrained::All(6));
   }
   pose_history_.emplace(stamp, std::make_shared<OriginalPose>(pose, P(size_)));
   current_opt_.insert(P(size_), Eigen2GTSAM(pose));
@@ -39,6 +38,8 @@ void PoseGraph::addGPS(long stamp, const Eigen::Vector3d& utm_pose) {
   }
   if (graph_->exists(initial_scale_factor_id_)) {
     graph_->remove(initial_scale_factor_id_);
+    // Perturb scale to make optimizer not get stuck
+    current_opt_.update(S(0), getScale() + 0.001);
   }
 
   // For now, assume we have exact time
