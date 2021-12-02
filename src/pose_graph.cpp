@@ -4,15 +4,15 @@
 #include "asoom/pose_graph.h"
 #include "asoom/between_pose_scale_factor.h"
 
-PoseGraph::PoseGraph(const PoseGraphParams& params)
-      : size_(0), initial_pose_factor_id_(-1), gps_factor_count_(0), params_(params)
+PoseGraph::PoseGraph(const Params& params)
+      : size_(0), initial_pose_factor_id_(-1), gps_factor_count_(0), params_(params),
+        graph_()
 {
-  graph_ = std::make_unique<gtsam::NonlinearFactorGraph>();
   current_opt_.insert(S(0), 1.0);
 
   // Create prior on scale initially because otherwise unconstrained
-  initial_scale_factor_id_ = graph_->size();
-  graph_->emplace_shared<gtsam::PriorFactor<double>>(S(0), 1.0,
+  initial_scale_factor_id_ = graph_.size();
+  graph_.emplace_shared<gtsam::PriorFactor<double>>(S(0), 1.0,
       gtsam::noiseModel::Constrained::All(1));
 }
 
@@ -23,7 +23,7 @@ size_t PoseGraph::addFrame(long stamp, const Eigen::Isometry3d& pose,
     // Get different from most recent
     auto most_recent_pose = pose_history_.rbegin()->second;
     auto diff = most_recent_pose->pose.inverse() * pose;
-    graph_->emplace_shared<gtsam::BetweenPoseScaleFactor>(most_recent_pose->key, 
+    graph_.emplace_shared<gtsam::BetweenPoseScaleFactor>(most_recent_pose->key, 
         P(size_), S(0), Eigen2GTSAM(diff), gtsam::noiseModel::Diagonal::Sigmas(sigmas));
 
     // Use current optimization estimates to improve initial guess
@@ -32,8 +32,8 @@ size_t PoseGraph::addFrame(long stamp, const Eigen::Isometry3d& pose,
     current_opt_.insert(P(size_), Eigen2GTSAM(most_recent_pose_opt * diff));
   } else {
     // Create prior on first pose to remove free degree of freedom until GPS installed
-    initial_pose_factor_id_ = graph_->size();
-    graph_->emplace_shared<gtsam::PriorFactor<gtsam::Pose3>>(P(size_), 
+    initial_pose_factor_id_ = graph_.size();
+    graph_.emplace_shared<gtsam::PriorFactor<gtsam::Pose3>>(P(size_), 
         Eigen2GTSAM(Eigen::Isometry3d::Identity()),
         gtsam::noiseModel::Constrained::All(6));
     current_opt_.insert(P(size_), Eigen2GTSAM(Eigen::Isometry3d::Identity()));
@@ -99,17 +99,17 @@ void PoseGraph::processGPSBuffer() {
 void PoseGraph::addGPSFactor(const gtsam::Key& key,
     const Eigen::Vector3d& utm_pos, const Eigen::Vector3d& sigma) 
 {
-  if (graph_->exists(initial_pose_factor_id_)) {
-    graph_->remove(initial_pose_factor_id_);
+  if (graph_.exists(initial_pose_factor_id_)) {
+    graph_.remove(initial_pose_factor_id_);
   }
   if (!params_.fix_scale) {
-    if (graph_->exists(initial_scale_factor_id_) && gps_factor_count_ > 0) {
+    if (graph_.exists(initial_scale_factor_id_) && gps_factor_count_ > 0) {
       // Takes 2 GPS constraints to determine scale
-      graph_->remove(initial_scale_factor_id_);
+      graph_.remove(initial_scale_factor_id_);
     }
   }
 
-  graph_->emplace_shared<gtsam::GPSFactor>(key, utm_pos,
+  graph_.emplace_shared<gtsam::GPSFactor>(key, utm_pos,
       gtsam::noiseModel::Diagonal::Sigmas(sigma));
   gps_factor_count_++;
 }
@@ -119,7 +119,7 @@ void PoseGraph::update() {
   current_opt_.update(S(0), getScale() + 0.0001);
 
   gtsam::LevenbergMarquardtParams opt_params;
-  gtsam::LevenbergMarquardtOptimizer opt(*graph_, current_opt_, opt_params);
+  gtsam::LevenbergMarquardtOptimizer opt(graph_, current_opt_, opt_params);
   current_opt_ = opt.optimize();
 }
 
@@ -146,5 +146,5 @@ size_t PoseGraph::size() const {
 }
 
 double PoseGraph::getError() const {
-  return graph_->error(current_opt_);
+  return graph_.error(current_opt_);
 }

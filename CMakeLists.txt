@@ -144,6 +144,7 @@ add_dependencies(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
   gtsam
   Eigen3::Eigen
+  ${catkin_LIBRARIES}
 )
 
 ## Declare a C++ executable

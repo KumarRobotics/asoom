@@ -19,7 +19,7 @@ namespace Eigen {
  */
 class PoseGraph {
   public:
-    struct PoseGraphParams {
+    struct Params {
       //! Vector of diagonal sigmas for between factors from VO
       Eigen::Vector6d between_sigmas;
 
@@ -36,12 +36,12 @@ class PoseGraph {
       bool fix_scale;
 
       //! Full constructor
-      PoseGraphParams(const Eigen::Vector6d& bs, const Eigen::Vector3d& gs, 
+      Params(const Eigen::Vector6d& bs, const Eigen::Vector3d& gs, 
           const Eigen::Vector3d& gsps = Eigen::Vector3d::Zero(), bool fs = false)
         : between_sigmas(bs), gps_sigmas(gs), gps_sigma_per_sec(gsps), fix_scale(fs) {}
 
       //! The "Everything is independent and isotropic" constructor
-      PoseGraphParams(double bs_p, double bs_r, double gs, 
+      Params(double bs_p, double bs_r, double gs, 
           double gsps = 0, bool fs = false) 
         : between_sigmas((Eigen::Vector6d() << bs_r, bs_r, bs_r, bs_p, bs_p, bs_p).finished()),
           gps_sigmas(Eigen::Vector3d::Constant(gs)), 
@@ -53,7 +53,7 @@ class PoseGraph {
      *
      * @param params Parameters for the pose graph
      */
-    PoseGraph(const PoseGraphParams& params);
+    PoseGraph(const Params& params);
 
     /*!
      * Create new image frame in the pose graph
@@ -148,14 +148,14 @@ class PoseGraph {
      * LOCAL CONSTANTS
      ***********************************************************/
 
-    const PoseGraphParams params_;
+    const Params params_;
     
     /***********************************************************
      * LOCAL VARIABLES
      ***********************************************************/
 
-    //! Pointer to gtsam factor graph
-    std::unique_ptr<gtsam::NonlinearFactorGraph> graph_;
+    //! GTSAM factor graph
+    gtsam::NonlinearFactorGraph graph_;
 
     //! Keep track of the current best estimates for nodes
     gtsam::Values current_opt_;

@@ -2,7 +2,7 @@
 #include "asoom/pose_graph.h"
 
 TEST(ASOOM_pose_graph_test, test_two_nodes) {
-  auto pg = std::make_unique<PoseGraph>(PoseGraph::PoseGraphParams(0.1, 0.1, 0.1));
+  auto pg = std::make_unique<PoseGraph>(PoseGraph::Params(0.1, 0.1, 0.1));
   ASSERT_TRUE(pg);
 
   Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
@@ -32,7 +32,7 @@ TEST(ASOOM_pose_graph_test, test_two_nodes) {
 }
 
 TEST(ASOOM_pose_graph_test, test_gps) {
-  auto pg = std::make_unique<PoseGraph>(PoseGraph::PoseGraphParams(0.1, 0.1, 0.1));
+  auto pg = std::make_unique<PoseGraph>(PoseGraph::Params(0.1, 0.1, 0.1));
   ASSERT_TRUE(pg);
 
   Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
@@ -60,7 +60,7 @@ TEST(ASOOM_pose_graph_test, test_gps) {
 }
 
 TEST(ASOOM_pose_graph_test, test_gps_rot) {
-  auto pg = std::make_unique<PoseGraph>(PoseGraph::PoseGraphParams(0.1, 0.1, 0.1));
+  auto pg = std::make_unique<PoseGraph>(PoseGraph::Params(0.1, 0.1, 0.1));
   ASSERT_TRUE(pg);
 
   Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
@@ -97,7 +97,7 @@ TEST(ASOOM_pose_graph_test, test_gps_rot) {
 }
 
 TEST(ASOOM_pose_graph_test, test_init) {
-  auto pg = std::make_unique<PoseGraph>(PoseGraph::PoseGraphParams(0.1, 0.1, 0.1));
+  auto pg = std::make_unique<PoseGraph>(PoseGraph::Params(0.1, 0.1, 0.1));
   ASSERT_TRUE(pg);
 
   Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
@@ -139,7 +139,7 @@ TEST(ASOOM_pose_graph_test, test_init) {
 }
 
 TEST(ASOOM_pose_graph_test, test_gps_bracket) {
-  auto pg = std::make_unique<PoseGraph>(PoseGraph::PoseGraphParams(0.1, 0.1, 0.1));
+  auto pg = std::make_unique<PoseGraph>(PoseGraph::Params(0.1, 0.1, 0.1));
   ASSERT_TRUE(pg);
 
   pg->addGPS(4, Eigen::Vector3d(100,0,0));
@@ -174,7 +174,7 @@ TEST(ASOOM_pose_graph_test, test_gps_bracket) {
 }
 
 TEST(ASOOM_pose_graph_test, test_cov) {
-  auto pg = std::make_unique<PoseGraph>(PoseGraph::PoseGraphParams(0.1, 0.1, 0.0, 0.1, true));
+  auto pg = std::make_unique<PoseGraph>(PoseGraph::Params(0.1, 0.1, 0.0, 0.1, true));
   ASSERT_TRUE(pg);
 
   Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
