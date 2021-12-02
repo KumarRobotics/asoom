@@ -12,14 +12,6 @@ using gtsam::symbol_shorthand::S;
 
 namespace Eigen {
   using Vector6d = Matrix<double, 6, 1>;
-
-  //! Helper function to construct 6d vector
-  static Vector6d createVector6d(double e0, double e1, double e2, double e3, 
-      double e4, double e5) {
-    Vector6d v;
-    v << e0, e1, e2, e3, e4, e5;
-    return v;
-  }
 }
 
 /*!
@@ -49,11 +41,11 @@ class PoseGraph {
         : between_sigmas(bs), gps_sigmas(gs), gps_sigma_per_sec(gsps), fix_scale(fs) {}
 
       //! The "Everything is independent and isotropic" constructor
-      PoseGraphParams(double bs_pos, double bs_rot, double gs, 
+      PoseGraphParams(double bs_p, double bs_r, double gs, 
           double gsps = 0, bool fs = false) 
-        : between_sigmas(Eigen::createVector6d(bs_rot, bs_rot, bs_rot, bs_pos, bs_pos, bs_pos)),
-          gps_sigmas(Eigen::Vector3d::Ones()*gs), 
-          gps_sigma_per_sec(Eigen::Vector3d::Ones()*gsps), fix_scale(fs) {}
+        : between_sigmas((Eigen::Vector6d() << bs_r, bs_r, bs_r, bs_p, bs_p, bs_p).finished()),
+          gps_sigmas(Eigen::Vector3d::Constant(gs)), 
+          gps_sigma_per_sec(Eigen::Vector3d::Constant(gsps)), fix_scale(fs) {}
     };
 
     /*!
