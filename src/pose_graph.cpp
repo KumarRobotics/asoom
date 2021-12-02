@@ -48,6 +48,10 @@ size_t PoseGraph::addFrame(long stamp, const Eigen::Isometry3d& pose) {
   return addFrame(stamp, pose, params_.between_sigmas);
 }
 
+size_t PoseGraph::addFrame(const Keyframe& frame) {
+  return addFrame(frame.getStamp(), frame.getPose(), params_.between_sigmas);
+}
+
 void PoseGraph::addGPS(long stamp, const Eigen::Vector3d& utm_pos) {
   // We buffer GPS measurements because we might get several GPS messages
   // and not get the frame to go between them for a while
@@ -147,4 +151,8 @@ size_t PoseGraph::size() const {
 
 double PoseGraph::getError() const {
   return graph_.error(current_opt_);
+}
+
+bool PoseGraph::isInitialized() const {
+  return (size() > 5 && gps_factor_count_ > 5) || params_.fix_scale;
 }

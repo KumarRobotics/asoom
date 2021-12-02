@@ -6,6 +6,7 @@
 #include <gtsam/geometry/Pose3.h>
 #include <opencv2/core/core.hpp>
 #include <Eigen/Dense>
+#include "asoom/keyframe.h"
 
 using gtsam::symbol_shorthand::P;
 using gtsam::symbol_shorthand::S;
@@ -66,8 +67,11 @@ class PoseGraph {
     size_t addFrame(long stamp, const Eigen::Isometry3d& pose, 
         const Eigen::Vector6d& sigmas);
 
-    //* Overloaded version with default sigmas
+    //! Overloaded version with default sigmas
     size_t addFrame(long stamp, const Eigen::Isometry3d& pose);
+    
+    //! Overloaded version that takes a Keyframe 
+    size_t addFrame(const Keyframe& frame);
 
     /*!
      * Add GPS factor to graph.  Automatically linearly interpolates
@@ -110,6 +114,11 @@ class PoseGraph {
      * @return Current error in graph
      */
     double getError() const;
+
+    /*!
+     * @return True if there are enough gps factors to converge the scale
+     */
+    bool isInitialized() const;
   private:
     /***********************************************************
      * LOCAL FUNCTIONS
@@ -160,11 +169,11 @@ class PoseGraph {
     //! Keep track of the current best estimates for nodes
     gtsam::Values current_opt_;
 
-    typedef struct OriginalPose {
+    struct OriginalPose {
       OriginalPose(const Eigen::Isometry3d& p, const gtsam::Key &k) : pose(p), key(k) {}
       Eigen::Isometry3d pose;
       gtsam::Key key;
-    } OriginalPose;
+    };
 
     //! Map to keep track of timestamp to original poses
     std::map<long, std::shared_ptr<OriginalPose>> pose_history_;

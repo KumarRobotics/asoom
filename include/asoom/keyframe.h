@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Eigen/Dense>
 #include <opencv2/core/core.hpp>
 #include <memory>
 #include <map>
@@ -9,7 +10,21 @@
  */
 class Keyframe {
   public:
-    Keyframe(long stamp, cv::Mat img) : stamp_(stamp), img_(img) {}
+    Keyframe(long stamp, cv::Mat img, const Eigen::Isometry3d& pose) 
+      : stamp_(stamp), img_(img), pose_(pose) {}
+
+    // Setters and getters
+    inline long getStamp() const {
+      return stamp_;
+    }
+
+    inline Eigen::Isometry3d getPose() const {
+      return pose_;
+    }
+
+    inline void setPose(const Eigen::Isometry3d& p) {
+      pose_ = p;
+    }
 
   private:
     /***********************************************************
@@ -18,6 +33,9 @@ class Keyframe {
 
     //! Timestamp in nsec from epoch
     const long stamp_;
+
+    //! Current global pose estimation
+    Eigen::Isometry3d pose_;
 
     //! Image associated with keyframe
     cv::Mat img_;

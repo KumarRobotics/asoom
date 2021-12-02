@@ -1,5 +1,7 @@
 #pragma once
 
+#include <thread>
+
 #include "asoom/pose_graph.h"
 #include "asoom/keyframe.h"
 
@@ -27,10 +29,46 @@ class ASOOM {
      * LOCAL VARIABLES
      ***********************************************************/
 
-    // pg_ and keyframes_ are shared since will be co-managed by mapper
-    //! PoseGraph object we are managing
-    std::shared_ptr<PoseGraph> pg_;
+    //! Input buffer for keyframes
+    struct KeyframeInput {
+      std::mutex m;
+      std::list<std::shared_ptr<Keyframe>> buf;
+    } keyframe_input_;
 
     //! Vector of keyframes.  Important to keep indices synchronized with PoseGraph
-    std::shared_ptr<Keyframes> keyframes_;
+    struct KeyframesStruct {
+      std::mutex m;
+      Keyframes frames;
+    } keyframes_;
+
+    /***********************************************************
+     * THREAD FUNCTORS
+     ***********************************************************/
+
+    //! Thread managing Pose Graph optimization
+    std::thread pose_graph_thread_;
+    class PoseGraphThread {
+      public:
+        PoseGraphThread(ASOOM *a, const PoseGraph::Params& p) : asoom_(a), pg_(p) {}
+
+        // We have to pass a pointer to parent back to access local members
+        // If the pointer is deleted then the class holding the thread is also
+        // dead, so this seems safe, if rather ugly
+        bool operator()();
+      private:
+        //! Work through the keyframe input buffer
+        void parseBuffer();
+
+        //! Update keyframes_ object with latest poses from PGO
+        void updateKeyframes();
+
+        //! PoseGraph object we are managing
+        PoseGraph pg_;
+
+        //! Pointer back to parent
+        ASOOM *asoom_;
+
+        //! Last pose, used for determining whether to create keyframe
+        Eigen::Vector3d last_key_pos_;
+    };
 };

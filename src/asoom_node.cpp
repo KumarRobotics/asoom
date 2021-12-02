@@ -2,7 +2,7 @@
 #include "asoom/asoom_wrapper.h"
 
 int main(int argc, char **argv) {
-  ros::init(argc, argv, "top_down_render");
+  ros::init(argc, argv, "asoom");
   ros::NodeHandle nh("~");
 
   try {
