@@ -12,6 +12,14 @@ using gtsam::symbol_shorthand::S;
 
 namespace Eigen {
   using Vector6d = Matrix<double, 6, 1>;
+
+  //! Helper function to construct 6d vector
+  static Vector6d createVector6d(double e0, double e1, double e2, double e3, 
+      double e4, double e5) {
+    Vector6d v;
+    v << e0, e1, e2, e3, e4, e5;
+    return v;
+  }
 }
 
 /*!
@@ -19,15 +27,41 @@ namespace Eigen {
  */
 class PoseGraph {
   public:
+    struct PoseGraphParams {
+      //! Vector of diagonal sigmas for between factors from VO
+      Eigen::Vector6d between_sigmas;
+
+      //! Vector of diagonal sigmas for GPS factors
+      Eigen::Vector3d gps_sigmas;
+
+      /*!
+       * Vector of diagonal sigmas for GPS multiplied with time
+       * Related to quality of interpolation
+       */
+      Eigen::Vector3d gps_sigma_per_sec;
+
+      //! Whether or not to fix scale (e.g. VIO or stereo) or allow GTSAM to optimize (mono VO)
+      bool fix_scale;
+
+      //! Full constructor
+      PoseGraphParams(const Eigen::Vector6d& bs, const Eigen::Vector3d& gs, 
+          const Eigen::Vector3d& gsps = Eigen::Vector3d::Zero(), bool fs = false)
+        : between_sigmas(bs), gps_sigmas(gs), gps_sigma_per_sec(gsps), fix_scale(fs) {}
+
+      //! The "Everything is independent and isotropic" constructor
+      PoseGraphParams(double bs_pos, double bs_rot, double gs, 
+          double gsps = 0, bool fs = false) 
+        : between_sigmas(Eigen::createVector6d(bs_rot, bs_rot, bs_rot, bs_pos, bs_pos, bs_pos)),
+          gps_sigmas(Eigen::Vector3d::Ones()*gs), 
+          gps_sigma_per_sec(Eigen::Vector3d::Ones()*gsps), fix_scale(fs) {}
+    };
+
     /*!
      * Constructor for PoseGraph
      *
-     * @param between_sigmas Default sigmas for between factors
-     * @param gps_sigmas Default sigmas for GPS factors
-     * @param fix_scale If true, do not optimize scale.  False by default
+     * @param params Parameters for the pose graph
      */
-    PoseGraph(const Eigen::Vector6d& between_sigmas, const Eigen::Vector3d& gps_sigmas, 
-        const Eigen::Vector3d& gps_sigma_per_sec = Eigen::Vector3d::Zero(), bool fix_scale = false);
+    PoseGraph(const PoseGraphParams& params);
 
     /*!
      * Create new image frame in the pose graph
@@ -122,20 +156,7 @@ class PoseGraph {
      * LOCAL CONSTANTS
      ***********************************************************/
 
-    //! Vector of diagonal sigmas for GPS factors
-    const Eigen::Vector3d gps_sigmas_;
-
-    /*!
-     * Vector of diagonal sigmas for GPS multiplied with time
-     * Related to quality of interpolation
-     */
-    const Eigen::Vector3d gps_sigma_per_sec_;
-
-    //! Vector of diagonal sigmas for between factors from VO
-    const Eigen::Matrix<double, 6, 1> between_sigmas_;
-
-    //! Whether or not to fix scale (e.g. VIO or stereo) or allow GTSAM to optimize (mono VO)
-    const bool fix_scale_;
+    const PoseGraphParams params_;
     
     /***********************************************************
      * LOCAL VARIABLES
