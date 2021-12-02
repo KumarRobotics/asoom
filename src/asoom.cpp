@@ -15,13 +15,26 @@ void ASOOM::addFrame(long stamp, cv::Mat& img, const Eigen::Isometry3d& pose) {
  ***********************************************************/
 
 bool ASOOM::PoseGraphThread::operator()() {
-  auto next = std::chrono::steady_clock::now();
+  using namespace std::chrono;
+  auto next = steady_clock::now();
   while (true) {
-    std::cout << "Pose Graph Thread" << std::endl;
-
+    auto start_t = high_resolution_clock::now();
     parseBuffer();
+    auto parse_buffer_t = high_resolution_clock::now();
     pg_.update();
+    auto update_t = high_resolution_clock::now();
     updateKeyframes();
+    auto update_keyframes_t = high_resolution_clock::now();
+
+    // Do on one line, color red so don't interleave thread info
+    std::cout << "\033[31m" << "[PGT] ====== Pose Graph Thread ======" << std::endl << 
+      "[PGT] Buffer parsing: " << 
+      duration_cast<microseconds>(parse_buffer_t - start_t).count() << "us" << std::endl <<
+      "[PGT] GTSAM Optimization: " << 
+      duration_cast<microseconds>(update_t - parse_buffer_t).count() << "us" << std::endl <<
+      "[PGT] Keyframe Updating: " << 
+      duration_cast<microseconds>(update_keyframes_t - update_t).count() << "us" << 
+      "\033[0m" << std::endl;
 
     next += 1000ms;
     std::this_thread::sleep_until(next);
