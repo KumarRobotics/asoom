@@ -24,6 +24,13 @@ class ASOOM {
      */
     void addFrame(long stamp, cv::Mat& img, const Eigen::Isometry3d& pose);
 
+    /*!
+     * Get the current graph, might not yet be entirely optimized
+     *
+     * @return Vector of keyframe poses, sorted last to most recent
+     */
+    std::vector<Eigen::Isometry3d> getGraph(); 
+
   private:
     /***********************************************************
      * LOCAL VARIABLES
@@ -49,11 +56,11 @@ class ASOOM {
     std::thread pose_graph_thread_;
     class PoseGraphThread {
       public:
-        PoseGraphThread(ASOOM *a, const PoseGraph::Params& p) : asoom_(a), pg_(p) {}
-
         // We have to pass a pointer to parent back to access local members
         // If the pointer is deleted then the class holding the thread is also
         // dead, so this seems safe, if rather ugly
+        PoseGraphThread(ASOOM *a, const PoseGraph::Params& p) : asoom_(a), pg_(p) {}
+
         bool operator()();
       private:
         //! Work through the keyframe input buffer

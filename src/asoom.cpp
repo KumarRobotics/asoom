@@ -10,6 +10,19 @@ void ASOOM::addFrame(long stamp, cv::Mat& img, const Eigen::Isometry3d& pose) {
   keyframe_input_.buf.emplace_back(std::make_shared<Keyframe>(stamp, img, pose));
 }
 
+std::vector<Eigen::Isometry3d> ASOOM::getGraph() {
+  std::vector<Eigen::Isometry3d> frame_vec;
+
+  {
+    std::scoped_lock<std::mutex>(keyframes_.m);
+    for (const auto& frame : keyframes_.frames) {
+      frame_vec.push_back(frame.second->getPose());
+    }
+  }
+
+  return frame_vec;
+}
+
 /***********************************************************
  * PoseGraph Thread
  ***********************************************************/
