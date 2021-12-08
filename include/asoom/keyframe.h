@@ -44,4 +44,5 @@ class Keyframe {
     cv::Mat depth_;
 };
 
+// Using pointers here should make sort faster
 using Keyframes = std::map<long, std::shared_ptr<Keyframe>>;

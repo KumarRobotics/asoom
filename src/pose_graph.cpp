@@ -154,5 +154,6 @@ double PoseGraph::getError() const {
 }
 
 bool PoseGraph::isInitialized() const {
-  return (size() > 5 && gps_factor_count_ > 5) || params_.fix_scale;
+  return (size() >= params_.num_frames_init && gps_factor_count_ >= params_.num_frames_init) || 
+         params_.fix_scale;
 }
