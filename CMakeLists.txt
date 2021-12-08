@@ -16,8 +16,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   cv_bridge
+  message_filters
   sensor_msgs
   geometry_msgs
+  visualization_msgs
 )
 
 ## System dependencies are found with CMake's conventions
