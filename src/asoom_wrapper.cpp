@@ -6,7 +6,7 @@
 #include "asoom/utils.h"
 
 ASOOMWrapper::ASOOMWrapper(ros::NodeHandle& nh)
-  : frustum_pts_(initFrustumPts(0.5)), nh_(nh)
+  : frustum_pts_(initFrustumPts(1)), nh_(nh)
 {
   nh_.param<bool>("require_imgs", require_imgs_, true);
 

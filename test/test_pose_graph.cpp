@@ -136,6 +136,13 @@ TEST(ASOOM_pose_graph_test, test_init) {
   EXPECT_NEAR(Eigen::Quaterniond(pg->getPoseAtIndex(2).rotation()).w(), 0.7071, 0.001);
   EXPECT_NEAR(Eigen::Quaterniond(pg->getPoseAtIndex(2).rotation()).z(), 0.7071, 0.001);
   EXPECT_NEAR(pg->getError(), 0, 0.00001);
+
+  pose.translate(Eigen::Vector3d(0,1,0)); 
+  pose.rotate(Eigen::AngleAxisd(M_PI/2, Eigen::Vector3d::UnitZ()));
+  ind = pg->addFrame(30, pose);
+  EXPECT_FLOAT_EQ(pg->getPoseAtIndex(3).translation()[1], 30);
+  EXPECT_FLOAT_EQ(pg->getPoseAtIndex(3).translation()[0], -10);
+  EXPECT_NEAR(pg->getError(), 0, 0.00001);
 }
 
 TEST(ASOOM_pose_graph_test, test_gps_bracket) {

@@ -90,7 +90,9 @@ void ASOOM::PoseGraphThread::parseBuffer() {
       size_t ind = pg_.addFrame(*frame);
       if ((pg_.getPoseAtIndex(ind).translation() - last_key_pos_).head<2>().norm() > 
           asoom_->params_.keyframe_dist_thresh_m && pg_.isInitialized()) {
-        last_key_pos_ = pg_.getPoseAtIndex(ind).translation();
+        // Update pose from pg since it has adapted to scale and starting loc
+        frame->setPose(pg_.getPoseAtIndex(ind));
+        last_key_pos_ = frame->getPose().translation();
 
         // We have moved far enough, insert frame
         std::scoped_lock<std::mutex>(asoom_->keyframes_.m);
