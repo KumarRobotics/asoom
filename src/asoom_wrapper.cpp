@@ -1,6 +1,8 @@
 // ROS Wrapper for ASOOM library
 
 #include <cv_bridge/cv_bridge.h>
+#include <tf2_ros/transform_broadcaster.h>
+#include <geometry_msgs/TransformStamped.h>
 
 #include "asoom/asoom_wrapper.h"
 #include "asoom/utils.h"
@@ -8,6 +10,8 @@
 ASOOMWrapper::ASOOMWrapper(ros::NodeHandle& nh)
   : frustum_pts_(initFrustumPts(1)), nh_(nh)
 {
+  utm_origin_ = Eigen::Vector2d::Zero();
+
   nh_.param<bool>("require_imgs", require_imgs_, true);
 
   // Top level parameters
@@ -144,6 +148,26 @@ void ASOOMWrapper::outputCallback(const ros::TimerEvent& event) {
       duration_cast<microseconds>(end_t - start_t).count() << "us" << "\033[0m" << std::endl;
 
   trajectory_viz_pub_.publish(marker_array);
+  publishUTMTransform(time);
+}
+
+void ASOOMWrapper::publishUTMTransform(const ros::Time& time) {
+  static tf2_ros::TransformBroadcaster br;
+  geometry_msgs::TransformStamped trans;
+
+  trans.header.stamp = time;
+  trans.header.frame_id = "world";
+  trans.child_frame_id = "utm";
+  trans.transform.rotation.x = 0;
+  trans.transform.rotation.y = 0;
+  trans.transform.rotation.z = 0;
+  trans.transform.rotation.w = 1;
+
+  trans.transform.translation.x = -utm_origin_[0];
+  trans.transform.translation.y = -utm_origin_[1];
+  trans.transform.translation.z = 0;
+
+  br.sendTransform(trans);
 }
 
 void ASOOMWrapper::poseImgCallback(const geometry_msgs::PoseStamped::ConstPtr& pose_msg,
@@ -159,6 +183,7 @@ void ASOOMWrapper::poseImgCallback(const geometry_msgs::PoseStamped::ConstPtr& p
 
 void ASOOMWrapper::gpsCallback(const sensor_msgs::NavSatFix::ConstPtr& gps_msg) {
   Eigen::Vector3d gps = ROS2Eigen(*gps_msg);
+  utm_origin_ = gps.head<2>();
   asoom_->addGPS(gps_msg->header.stamp.toNSec(), gps);
 }
 

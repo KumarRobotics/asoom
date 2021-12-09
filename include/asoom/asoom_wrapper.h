@@ -31,6 +31,8 @@ class ASOOMWrapper {
     //! Called to publish output
     void outputCallback(const ros::TimerEvent& event);
 
+    void publishUTMTransform(const ros::Time& time);
+
     //! Callback for VO.  Pass empty image pointer if only tracking pose
     void poseImgCallback(const geometry_msgs::PoseStamped::ConstPtr& pose_msg,
         const sensor_msgs::Image::ConstPtr& img_msg);
@@ -60,6 +62,8 @@ class ASOOMWrapper {
 
     //! If true, sub to synchronized images and poses
     bool require_imgs_;
+
+    Eigen::Vector2d utm_origin_;
 
     //! ROS Pubs and subs
     std::unique_ptr<message_filters::Subscriber<geometry_msgs::PoseStamped>> pose_sync_sub_;
