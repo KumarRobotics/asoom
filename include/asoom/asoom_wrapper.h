@@ -37,6 +37,9 @@ class ASOOMWrapper {
 
     //! Callback for GPS data
     void gpsCallback(const sensor_msgs::NavSatFix::ConstPtr& gps_msg);
+    
+    //! Convert Eigen position to ROS point
+    static geometry_msgs::Point Eigen2ROS(const Eigen::Vector3d& pos);
 
     //! Convert ROS Pose to Eigen pose
     static Eigen::Isometry3d ROS2Eigen(const geometry_msgs::PoseStamped& pose_msg);
@@ -68,4 +71,8 @@ class ASOOMWrapper {
 
     //! Timer to loop and publish visualizations and the map
     ros::Timer output_timer_;
+
+    //! Vector of points specifying camera frustum viz
+    const std::vector<Eigen::Vector3d> frustum_pts_;
+    static std::vector<Eigen::Vector3d> initFrustumPts(float scale=0.5);
 };

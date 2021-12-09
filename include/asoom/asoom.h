@@ -54,10 +54,20 @@ class ASOOM {
      */
     std::vector<Eigen::Isometry3d> getGraph(); 
 
+    /*!
+     * Get the most recent timestamp in the graph
+     *
+     * @return Most recent timestamp in nsec from epoch
+     */
+    long getMostRecentStamp() const;
+
   private:
     /***********************************************************
      * LOCAL VARIABLES
      ***********************************************************/
+
+    //! Most recent timestamp for data added to graph
+    long most_recent_stamp_ = 0;
 
     //! Parameters for high level system
     const Params params_;

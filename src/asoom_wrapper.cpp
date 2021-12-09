@@ -5,9 +5,9 @@
 #include "asoom/asoom_wrapper.h"
 #include "asoom/utils.h"
 
-ASOOMWrapper::ASOOMWrapper(ros::NodeHandle& nh) {
-  nh_ = nh;
-
+ASOOMWrapper::ASOOMWrapper(ros::NodeHandle& nh)
+  : frustum_pts_(initFrustumPts(0.5)), nh_(nh)
+{
   nh_.param<bool>("require_imgs", require_imgs_, true);
 
   // Top level parameters
@@ -26,6 +26,18 @@ ASOOMWrapper::ASOOMWrapper(ros::NodeHandle& nh) {
   nh_.param<bool>("pose_graph_fix_scale", pg_fs, false);
   nh_.param<int>("pose_graph_num_frames_init", pg_nfi, 5);
   PoseGraph::Params pose_graph_params(pg_bs_p, pg_bs_r, pg_gs, pg_gsps, pg_fs, pg_nfi);
+
+  std::cout << "\033[32m" << "[ROS] ======== Configuration ========" << std::endl <<
+    "[ROS] require_imgs: " << require_imgs_ << std::endl <<
+    "[ROS] pgo_thread_period_ms: " << asoom_params.pgo_thread_period_ms << std::endl <<
+    "[ROS] keyframe_dist_thresh_m: " << asoom_params.keyframe_dist_thresh_m << std::endl <<
+    "[ROS] pose_graph_between_sigmas_pos: " << pg_bs_p << std::endl <<
+    "[ROS] pose_graph_between_sigmas_rot: " << pg_bs_r << std::endl <<
+    "[ROS] pose_graph_gps_sigmas: " << pg_gs << std::endl <<
+    "[ROS] pose_graph_gps_sigma_per_sec: " << pg_gsps << std::endl <<
+    "[ROS] pose_graph_fix_scale: " << pg_fs << std::endl <<
+    "[ROS] pose_graph_num_frames_init: " << pg_nfi << std::endl <<
+    "[ROS] ====== End Configuration ======" << "\033[0m" << std::endl;
 
   asoom_ = std::make_unique<ASOOM>(asoom_params, pose_graph_params);
 }
@@ -51,15 +63,87 @@ void ASOOMWrapper::initialize() {
   output_timer_ = nh_.createTimer(ros::Duration(1.0), &ASOOMWrapper::outputCallback, this);
 }
 
+std::vector<Eigen::Vector3d> ASOOMWrapper::initFrustumPts(float scale) {
+  std::vector<Eigen::Vector3d> pts;
+  pts.push_back(scale*Eigen::Vector3d(0, 0, 0));
+  pts.push_back(scale*Eigen::Vector3d(1, 0.625, 1));
+  pts.push_back(scale*Eigen::Vector3d(0, 0, 0));
+  pts.push_back(scale*Eigen::Vector3d(-1, 0.625, 1));
+  pts.push_back(scale*Eigen::Vector3d(0, 0, 0));
+  pts.push_back(scale*Eigen::Vector3d(-1, -0.625, 1));
+  pts.push_back(scale*Eigen::Vector3d(0, 0, 0));
+  pts.push_back(scale*Eigen::Vector3d(1, -0.625, 1));
+
+  pts.push_back(scale*Eigen::Vector3d(1, 0.625, 1));
+  pts.push_back(scale*Eigen::Vector3d(-1, 0.625, 1));
+  pts.push_back(scale*Eigen::Vector3d(-1, 0.625, 1));
+  pts.push_back(scale*Eigen::Vector3d(-1, -0.625, 1));
+  pts.push_back(scale*Eigen::Vector3d(-1, -0.625, 1));
+  pts.push_back(scale*Eigen::Vector3d(1, -0.625, 1));
+  pts.push_back(scale*Eigen::Vector3d(1, -0.625, 1));
+  pts.push_back(scale*Eigen::Vector3d(1, 0.625, 1));
+  return pts;
+}
+
 void ASOOMWrapper::outputCallback(const ros::TimerEvent& event) {
   using namespace std::chrono;
   auto start_t = high_resolution_clock::now();
 
+  visualization_msgs::MarkerArray marker_array;
+  visualization_msgs::Marker traj_marker, cam_marker;
+
+  traj_marker.header.frame_id = "utm";
+  ros::Time time;
+  time.fromNSec(asoom_->getMostRecentStamp());
+  traj_marker.header.stamp = time;
+  traj_marker.ns = "trajectory";
+  traj_marker.id = 0;
+  traj_marker.type = visualization_msgs::Marker::LINE_STRIP;
+  traj_marker.action = visualization_msgs::Marker::ADD;
+  traj_marker.pose.position.x = 0;
+  traj_marker.pose.position.y = 0;
+  traj_marker.pose.position.z = 0;
+  traj_marker.pose.orientation.x = 0;
+  traj_marker.pose.orientation.y = 0;
+  traj_marker.pose.orientation.z = 0;
+  traj_marker.pose.orientation.w = 1;
+  traj_marker.scale.x = 0.2; // Line width
+  traj_marker.color.a = 1;
+  traj_marker.color.r = 1;
+  traj_marker.color.g = 0;
+  traj_marker.color.b = 0;
+
+  cam_marker.header = traj_marker.header;
+  cam_marker.ns = "cams";
+  cam_marker.id = 0;
+  cam_marker.type = visualization_msgs::Marker::LINE_LIST;
+  cam_marker.action = visualization_msgs::Marker::ADD;
+  cam_marker.pose = traj_marker.pose;
+  cam_marker.scale.x = 0.1; // Line width
+  cam_marker.color.a = 1;
+  cam_marker.color.r = 0;
+  cam_marker.color.g = 1;
+  cam_marker.color.b = 0;
+
   std::vector<Eigen::Isometry3d> poses = asoom_->getGraph();
+  std::cout << "\033[32m" << "[ROS] Keyframe count: " << poses.size() << "\033[0m" << std::endl;
+
+  for (const auto& pose : poses) {
+    traj_marker.points.push_back(Eigen2ROS(pose.translation()));
+
+    for (const auto& pt : frustum_pts_) {
+      cam_marker.points.push_back(Eigen2ROS(pose * pt));
+    }
+  }
+
+  marker_array.markers.push_back(traj_marker);
+  marker_array.markers.push_back(cam_marker);
 
   auto end_t = high_resolution_clock::now();
   std::cout << "\033[32m" << "[ROS] Output Visualization: " <<
       duration_cast<microseconds>(end_t - start_t).count() << "us" << "\033[0m" << std::endl;
+
+  trajectory_viz_pub_.publish(marker_array);
 }
 
 void ASOOMWrapper::poseImgCallback(const geometry_msgs::PoseStamped::ConstPtr& pose_msg,
@@ -78,8 +162,16 @@ void ASOOMWrapper::gpsCallback(const sensor_msgs::NavSatFix::ConstPtr& gps_msg) 
   asoom_->addGPS(gps_msg->header.stamp.toNSec(), gps);
 }
 
+geometry_msgs::Point ASOOMWrapper::Eigen2ROS(const Eigen::Vector3d& pos) {
+  geometry_msgs::Point point;
+  point.x = pos[0];
+  point.y = pos[1];
+  point.z = pos[2];
+  return point;
+}
+
 Eigen::Isometry3d ASOOMWrapper::ROS2Eigen(const geometry_msgs::PoseStamped& pose_msg) {
-  Eigen::Isometry3d pose;
+  Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
   pose.translate(Eigen::Vector3d(
         pose_msg.pose.position.x,
         pose_msg.pose.position.y,

@@ -13,6 +13,10 @@ ASOOM::~ASOOM() {
 }
 
 void ASOOM::addFrame(long stamp, cv::Mat& img, const Eigen::Isometry3d& pose) {
+  if (stamp > most_recent_stamp_) {
+    most_recent_stamp_ = stamp;
+  }
+
   std::scoped_lock<std::mutex>(keyframe_input_.m);
   keyframe_input_.buf.emplace_back(std::make_shared<Keyframe>(stamp, img, pose));
 }
@@ -33,6 +37,12 @@ std::vector<Eigen::Isometry3d> ASOOM::getGraph() {
   }
 
   return frame_vec;
+}
+
+long ASOOM::getMostRecentStamp() const {
+  // We could manage this inside the PoseGraph, but then we would
+  // have to deal with thread-safety
+  return most_recent_stamp_;
 }
 
 /***********************************************************
