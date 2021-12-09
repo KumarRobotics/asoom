@@ -28,6 +28,16 @@ class ASOOMWrapper {
      * LOCAL FUNCTIONS
      ***********************************************************/
 
+    //! Called to publish output
+    void outputCallback(const ros::TimerEvent& event);
+
+    //! Callback for VO.  Pass empty image pointer if only tracking pose
+    void poseImgCallback(const geometry_msgs::PoseStamped::ConstPtr& pose_msg,
+        const sensor_msgs::Image::ConstPtr& img_msg);
+
+    //! Callback for GPS data
+    void gpsCallback(const sensor_msgs::NavSatFix::ConstPtr& gps_msg);
+
     //! Convert ROS Pose to Eigen pose
     static Eigen::Isometry3d ROS2Eigen(const geometry_msgs::PoseStamped& pose_msg);
 
@@ -36,13 +46,6 @@ class ASOOMWrapper {
      * This also includes moving from WGS84 to UTM
      */
     static Eigen::Vector3d ROS2Eigen(const sensor_msgs::NavSatFix& gps_msg);
-
-    //! Callback for VO.  Pass empty image pointer if only tracking pose
-    void poseImgCallback(const geometry_msgs::PoseStamped::ConstPtr& pose_msg,
-        const sensor_msgs::Image::ConstPtr& img_msg);
-
-    //! Callback for GPS data
-    void gpsCallback(const sensor_msgs::NavSatFix::ConstPtr& gps_msg);
 
     /***********************************************************
      * LOCAL VARIABLES
@@ -62,4 +65,7 @@ class ASOOMWrapper {
       sensor_msgs::Image>> pose_img_sync_sub_;
     ros::Subscriber gps_sub_, pose_sub_;
     ros::Publisher trajectory_viz_pub_;
+
+    //! Timer to loop and publish visualizations and the map
+    ros::Timer output_timer_;
 };

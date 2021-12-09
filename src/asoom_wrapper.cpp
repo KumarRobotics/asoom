@@ -47,6 +47,19 @@ void ASOOMWrapper::initialize() {
   gps_sub_ = nh_.subscribe<sensor_msgs::NavSatFix>("gps", 10, &ASOOMWrapper::gpsCallback, this);
 
   trajectory_viz_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("viz", 1);
+
+  output_timer_ = nh_.createTimer(ros::Duration(1.0), &ASOOMWrapper::outputCallback, this);
+}
+
+void ASOOMWrapper::outputCallback(const ros::TimerEvent& event) {
+  using namespace std::chrono;
+  auto start_t = high_resolution_clock::now();
+
+  std::vector<Eigen::Isometry3d> poses = asoom_->getGraph();
+
+  auto end_t = high_resolution_clock::now();
+  std::cout << "\033[32m" << "[ROS] Output Visualization: " <<
+      duration_cast<microseconds>(end_t - start_t).count() << "us" << "\033[0m" << std::endl;
 }
 
 void ASOOMWrapper::poseImgCallback(const geometry_msgs::PoseStamped::ConstPtr& pose_msg,
