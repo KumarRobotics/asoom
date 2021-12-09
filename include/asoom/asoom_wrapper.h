@@ -10,6 +10,11 @@
 
 #include "asoom/asoom.h"
 
+/*!
+ * Wrap up ASOOM with ROS stuff.
+ * Contains pubs and subs as well as parameter management and type conversions
+ * to ROS-land.
+ */
 class ASOOMWrapper {
   public:
     //! Setup variables, init stuff
@@ -22,6 +27,15 @@ class ASOOMWrapper {
     /***********************************************************
      * LOCAL FUNCTIONS
      ***********************************************************/
+
+    //! Convert ROS Pose to Eigen pose
+    static Eigen::Isometry3d ROS2Eigen(const geometry_msgs::PoseStamped& pose_msg);
+
+    /*!
+     * Convert ROS GPS msg to Eigen
+     * This also includes moving from WGS84 to UTM
+     */
+    static Eigen::Vector3d ROS2Eigen(const sensor_msgs::NavSatFix& gps_msg);
 
     //! Callback for VO.  Pass empty image pointer if only tracking pose
     void poseImgCallback(const geometry_msgs::PoseStamped::ConstPtr& pose_msg,

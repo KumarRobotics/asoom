@@ -3,6 +3,7 @@
 #include <cv_bridge/cv_bridge.h>
 
 #include "asoom/asoom_wrapper.h"
+#include "asoom/utils.h"
 
 ASOOMWrapper::ASOOMWrapper(ros::NodeHandle& nh) {
   nh_ = nh;
@@ -51,7 +52,40 @@ void ASOOMWrapper::initialize() {
 void ASOOMWrapper::poseImgCallback(const geometry_msgs::PoseStamped::ConstPtr& pose_msg,
     const sensor_msgs::Image::ConstPtr& img_msg)
 {
+  Eigen::Isometry3d pose = ROS2Eigen(*pose_msg);
+  cv::Mat img;
+  if (img_msg) {
+    img = cv_bridge::toCvCopy(img_msg, sensor_msgs::image_encodings::BGR8)->image;
+  }
+  asoom_->addFrame(pose_msg->header.stamp.toNSec(), img, pose);
 }
 
 void ASOOMWrapper::gpsCallback(const sensor_msgs::NavSatFix::ConstPtr& gps_msg) {
+  Eigen::Vector3d gps = ROS2Eigen(*gps_msg);
+  asoom_->addGPS(gps_msg->header.stamp.toNSec(), gps);
+}
+
+Eigen::Isometry3d ASOOMWrapper::ROS2Eigen(const geometry_msgs::PoseStamped& pose_msg) {
+  Eigen::Isometry3d pose;
+  pose.translate(Eigen::Vector3d(
+        pose_msg.pose.position.x,
+        pose_msg.pose.position.y,
+        pose_msg.pose.position.z
+        ));
+  pose.rotate(Eigen::Quaterniond(
+        pose_msg.pose.orientation.w,
+        pose_msg.pose.orientation.x,
+        pose_msg.pose.orientation.y,
+        pose_msg.pose.orientation.z
+        ));
+  return pose;
+}
+
+Eigen::Vector3d ASOOMWrapper::ROS2Eigen(const sensor_msgs::NavSatFix& gps_msg) {
+  Eigen::Vector2d gps_latlong(gps_msg.latitude, gps_msg.longitude);  
+  Eigen::Vector3d gps;
+  int zone;
+  gps.head<2>() = LatLong2UTM(gps_latlong, zone);
+  gps[2] = gps_msg.altitude;
+  return gps;
 }

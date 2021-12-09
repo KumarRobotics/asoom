@@ -61,8 +61,7 @@ TEST(ASOOM_asoom_test, test_pgo_gps_thread) {
   std::this_thread::sleep_for(std::chrono::milliseconds(150));
   auto poses = a.getGraph();
 
-  // Verify that nothing has really changed, except translation to 0
-  // We don't expect the middle point, since didn't move enough
+  // Now we have initialized, make sure next pose is in the right place
   ASSERT_EQ(poses.size(), 1);
   EXPECT_FLOAT_EQ(poses[0].translation()[0], 30);
 }

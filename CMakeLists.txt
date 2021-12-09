@@ -152,7 +152,10 @@ target_link_libraries(${PROJECT_NAME}
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(${PROJECT_NAME}_node src/asoom_node.cpp src/asoom_wrapper.cpp)
+add_executable(${PROJECT_NAME}_node 
+  src/asoom_node.cpp 
+  src/asoom_wrapper.cpp
+)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
@@ -208,6 +211,7 @@ catkin_add_gtest(${PROJECT_NAME}-test
   test/test.cpp
   test/test_asoom.cpp
   test/test_pose_graph.cpp
+  test/test_utils.cpp
 )
 if(TARGET ${PROJECT_NAME}-test)
   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
