@@ -2,9 +2,9 @@
 <launch>
   <node pkg="asoom" type="asoom_node" name="asoom_node" output="screen">
     <param name="require_imgs" value="False"/>
-    <param name="pose_graph_fix_scale" value="True"/>
+    <param name="pose_graph_fix_scale" value="False"/>
 
     <remap from="~pose" to="/dso/pose"/>
-    <!--remap from="~gps" to="/quadrotor/mavros/global_position/global"/-->
+    <remap from="~gps" to="/ublox/fix"/>
   </node>
 </launch>

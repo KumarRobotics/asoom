@@ -64,20 +64,23 @@ bool ASOOM::PoseGraphThread::operator()() {
     updateKeyframes();
     auto update_keyframes_t = high_resolution_clock::now();
 
+    double scale = pg_.getScale();
+    double error = pg_.getError();
     // Do on one line, color red so don't interleave thread info
-    std::cout << "\033[31m" << "[PGT] ====== Pose Graph Thread ======" << std::endl << 
+    std::cout << "\033[33m" << "[PGT] ====== Pose Graph Thread ======" << std::endl << 
       "[PGT] Buffer parsing: " << 
       duration_cast<microseconds>(parse_buffer_t - start_t).count() << "us" << std::endl <<
       "[PGT] GTSAM Optimization: " << 
       duration_cast<microseconds>(update_t - parse_buffer_t).count() << "us" << std::endl <<
       "[PGT] Keyframe Updating: " << 
-      duration_cast<microseconds>(update_keyframes_t - update_t).count() << "us" << 
-      "\033[0m" << std::endl;
+      duration_cast<microseconds>(update_keyframes_t - update_t).count() << "us" << std::endl <<
+      "[PGT] Scale: " << scale << std::endl <<
+      "[PGT] Error: " << error << "\033[0m" << std::endl;
 
     next += milliseconds(asoom_->params_.pgo_thread_period_ms);
     std::this_thread::sleep_until(next);
   }
-  std::cout << "\033[31m" << "[PGT] Pose Graph Thread Exited" << "\033[0m" << std::endl;
+  std::cout << "\033[33m" << "[PGT] Pose Graph Thread Exited" << "\033[0m" << std::endl;
   return true;
 }
 

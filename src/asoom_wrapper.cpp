@@ -183,7 +183,9 @@ void ASOOMWrapper::poseImgCallback(const geometry_msgs::PoseStamped::ConstPtr& p
 
 void ASOOMWrapper::gpsCallback(const sensor_msgs::NavSatFix::ConstPtr& gps_msg) {
   Eigen::Vector3d gps = ROS2Eigen(*gps_msg);
-  utm_origin_ = gps.head<2>();
+  if (utm_origin_[0] == 0) {
+    utm_origin_ = gps.head<2>();
+  }
   asoom_->addGPS(gps_msg->header.stamp.toNSec(), gps);
 }
 

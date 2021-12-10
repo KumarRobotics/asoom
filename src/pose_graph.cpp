@@ -61,7 +61,17 @@ void PoseGraph::addGPS(long stamp, const Eigen::Vector3d& utm_pos) {
 
 void PoseGraph::processGPSBuffer() {
   for (auto gps_it = gps_buffer_.begin(); gps_it != gps_buffer_.end();) {
+    // First pose after or at same time as GPS
     auto target_frame_it = pose_history_.lower_bound(gps_it->first);
+
+    if (pose_history_.size() > 0) {
+      if (std::abs(gps_it->first - pose_history_.rbegin()->first) > 100e9) {
+        std::cout << "\033[31m" << "[WARNING] GPS timestamp " << 
+          std::abs(gps_it->first - pose_history_.rbegin()->first)/1e9 << 
+          " sec off most recent pose" << "\033[0m" << std::endl;
+      }
+    }
+
     // All poses are older than GPS
     if (target_frame_it == pose_history_.end()) return;
 
@@ -69,6 +79,7 @@ void PoseGraph::processGPSBuffer() {
       // GPS stamp aligns perfectly, great!
       addGPSFactor(target_frame_it->second->key, *(gps_it)->second, params_.gps_sigmas);
     } else {
+      // GPS from before pose, next GPS from after
       auto gps_next_it = std::next(gps_it);
       if (gps_next_it != gps_buffer_.end()) {
         double after_t_diff = gps_next_it->first - target_frame_it->first;
