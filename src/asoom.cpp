@@ -17,12 +17,12 @@ void ASOOM::addFrame(long stamp, cv::Mat& img, const Eigen::Isometry3d& pose) {
     most_recent_stamp_ = stamp;
   }
 
-  std::scoped_lock<std::mutex>(keyframe_input_.m);
+  std::scoped_lock<std::mutex> lock(keyframe_input_.m);
   keyframe_input_.buf.emplace_back(std::make_shared<Keyframe>(stamp, img, pose));
 }
 
 void ASOOM::addGPS(long stamp, const Eigen::Vector3d& pos) {
-  std::scoped_lock<std::mutex>(gps_input_.m);
+  std::scoped_lock<std::mutex> lock(gps_input_.m);
   gps_input_.buf.emplace_back(GPS(stamp, pos));
 }
 
@@ -30,7 +30,7 @@ std::vector<Eigen::Isometry3d> ASOOM::getGraph() {
   std::vector<Eigen::Isometry3d> frame_vec;
 
   {
-    std::scoped_lock<std::mutex>(keyframes_.m);
+    std::shared_lock lock(keyframes_.m);
     for (const auto& frame : keyframes_.frames) {
       frame_vec.push_back(frame.second->getPose());
     }
@@ -91,7 +91,7 @@ bool ASOOM::PoseGraphThread::operator()() {
 void ASOOM::PoseGraphThread::parseBuffer() {
   {
     // VO Buffer
-    std::scoped_lock<std::mutex>(asoom_->keyframe_input_.m);
+    std::scoped_lock<std::mutex> lock(asoom_->keyframe_input_.m);
 
     for (auto& frame : asoom_->keyframe_input_.buf) {
       size_t ind = pg_.addFrame(*frame);
@@ -102,7 +102,7 @@ void ASOOM::PoseGraphThread::parseBuffer() {
         last_key_pos_ = frame->getPose().translation();
 
         // We have moved far enough, insert frame
-        std::scoped_lock<std::mutex>(asoom_->keyframes_.m);
+        std::unique_lock lock(asoom_->keyframes_.m);
         // Use std::move since we are going to wipe buf anyway
         asoom_->keyframes_.frames.insert({frame->getStamp(), std::move(frame)});
       }
@@ -112,7 +112,7 @@ void ASOOM::PoseGraphThread::parseBuffer() {
 
   {
     // GPS Buffer
-    std::scoped_lock<std::mutex>(asoom_->gps_input_.m);
+    std::scoped_lock<std::mutex> lock(asoom_->gps_input_.m);
 
     for (auto& gps : asoom_->gps_input_.buf) {
       pg_.addGPS(gps.stamp, std::move(gps.utm));
@@ -123,7 +123,7 @@ void ASOOM::PoseGraphThread::parseBuffer() {
 }
 
 void ASOOM::PoseGraphThread::updateKeyframes() {
-  std::scoped_lock<std::mutex>(asoom_->keyframes_.m);
+  std::unique_lock lock(asoom_->keyframes_.m);
 
   for (auto& key : asoom_->keyframes_.frames) {
     auto new_pose = pg_.getPoseAtTime(key.first);

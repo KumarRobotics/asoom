@@ -134,6 +134,7 @@ include_directories(
 add_library(${PROJECT_NAME}
   src/asoom.cpp
   src/pose_graph.cpp
+  src/rectifier.cpp
 )
 
 ## Add cmake target dependencies of the library
@@ -213,6 +214,7 @@ catkin_add_gtest(${PROJECT_NAME}-test
   test/test_asoom.cpp
   test/test_pose_graph.cpp
   test/test_utils.cpp
+  test/test_rectifier.cpp
 )
 if(TARGET ${PROJECT_NAME}-test)
   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})

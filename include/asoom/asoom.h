@@ -1,6 +1,7 @@
 #pragma once
 
 #include <thread>
+#include <shared_mutex>
 
 #include "asoom/pose_graph.h"
 #include "asoom/keyframe.h"
@@ -93,7 +94,7 @@ class ASOOM {
 
     //! Vector of keyframes.  Important to keep indices synchronized with PoseGraph
     struct KeyframesStruct {
-      std::mutex m;
+      std::shared_mutex m;
       Keyframes frames;
     } keyframes_;
 
