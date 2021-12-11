@@ -96,7 +96,7 @@ void ASOOMWrapper::outputCallback(const ros::TimerEvent& event) {
   visualization_msgs::MarkerArray marker_array;
   visualization_msgs::Marker traj_marker, cam_marker;
 
-  traj_marker.header.frame_id = "utm";
+  traj_marker.header.frame_id = "world";
   ros::Time time;
   time.fromNSec(asoom_->getMostRecentStamp());
   traj_marker.header.stamp = time;
@@ -145,7 +145,8 @@ void ASOOMWrapper::outputCallback(const ros::TimerEvent& event) {
 
   auto end_t = high_resolution_clock::now();
   std::cout << "\033[32m" << "[ROS] Output Visualization: " <<
-      duration_cast<microseconds>(end_t - start_t).count() << "us" << "\033[0m" << std::endl;
+      duration_cast<microseconds>(end_t - start_t).count() << "us" << "\033[0m" << std::endl
+        << std::flush;
 
   trajectory_viz_pub_.publish(marker_array);
   publishUTMTransform(time);
@@ -186,6 +187,8 @@ void ASOOMWrapper::gpsCallback(const sensor_msgs::NavSatFix::ConstPtr& gps_msg) 
   if (utm_origin_[0] == 0) {
     utm_origin_ = gps.head<2>();
   }
+  // PGO works better with smaller numbers instead of in utm frame directly
+  gps.head<2>() -= utm_origin_;
   asoom_->addGPS(gps_msg->header.stamp.toNSec(), gps);
 }
 

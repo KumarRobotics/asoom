@@ -205,3 +205,31 @@ TEST(ASOOM_pose_graph_test, test_cov) {
   EXPECT_NEAR(pg->getPoseAtIndex(1).translation()[0], 2.1, 0.05);
   EXPECT_FLOAT_EQ(pg->getScale(), 1);
 }
+
+TEST(ASOOM_pose_graph_test, test_neg_scale) {
+  auto pg = std::make_unique<PoseGraph>(PoseGraph::Params(0.1, 0.1, 0.1));
+  ASSERT_TRUE(pg);
+
+  Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
+  // Make starting point not at 0,0,0 so optimizer does something
+  pose.translate(Eigen::Vector3d(1,0,0)); 
+  size_t ind = pg->addFrame(10, pose);
+  EXPECT_EQ(ind, 0);
+
+  pose.translate(Eigen::Vector3d(1,0,0)); 
+  ind = pg->addFrame(20, pose);
+  EXPECT_EQ(ind, 1);
+
+  pg->addGPS(10, Eigen::Vector3d(-10,0,0));
+  pg->addGPS(20, Eigen::Vector3d(-20,0,0));
+
+  // Test optimization
+  EXPECT_FLOAT_EQ(pg->getPoseAtIndex(0).translation()[0], 0);
+  EXPECT_FLOAT_EQ(pg->getPoseAtIndex(1).translation()[0], 1);
+  pg->update();
+  EXPECT_FLOAT_EQ(pg->getPoseAtIndex(0).translation()[0], -10);
+  EXPECT_FLOAT_EQ(pg->getPoseAtIndex(1).translation()[0], -20);
+
+  EXPECT_FLOAT_EQ(pg->getScale(), 10);
+  EXPECT_NEAR(pg->getError(), 0, 0.00001);
+}

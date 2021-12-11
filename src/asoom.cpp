@@ -75,7 +75,11 @@ bool ASOOM::PoseGraphThread::operator()() {
       "[PGT] Keyframe Updating: " << 
       duration_cast<microseconds>(update_keyframes_t - update_t).count() << "us" << std::endl <<
       "[PGT] Scale: " << scale << std::endl <<
-      "[PGT] Error: " << error << "\033[0m" << std::endl;
+      "[PGT] Error: " << error << "\033[0m" << std::endl << std::flush;
+
+    if (scale < 0) {
+        std::cout << "\033[31m" << "[WARNING] Scale is negative" << "\033[0m" << std::endl;
+    }
 
     next += milliseconds(asoom_->params_.pgo_thread_period_ms);
     std::this_thread::sleep_until(next);

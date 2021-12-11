@@ -130,12 +130,24 @@ void PoseGraph::addGPSFactor(const gtsam::Key& key,
 }
 
 void PoseGraph::update() {
-  // Perturb scale to make optimizer not get stuck
-  current_opt_.update(S(0), getScale() + 0.0001);
-
   gtsam::LevenbergMarquardtParams opt_params;
   gtsam::LevenbergMarquardtOptimizer opt(graph_, current_opt_, opt_params);
   current_opt_ = opt.optimize();
+
+  if (getScale() < 0) {
+    // With motion in the x-y plane, can end up with false local min
+    current_opt_.update<double>(S(0), getScale()*-1);
+    for (size_t ind=0; ind<size(); ind++) {
+      auto cur_pose = getPoseAtIndex(ind);
+      cur_pose.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitZ()));
+      current_opt_.update<gtsam::Pose3>(P(ind), Eigen2GTSAM(cur_pose));
+    }
+
+    // Run optimizer again
+    // We could recurse, but want to not get infinite loop
+    gtsam::LevenbergMarquardtOptimizer opt2(graph_, current_opt_, opt_params);
+    current_opt_ = opt2.optimize();
+  }
 }
 
 std::optional<Eigen::Isometry3d> PoseGraph::getPoseAtTime(long stamp) const {
@@ -165,6 +177,6 @@ double PoseGraph::getError() const {
 }
 
 bool PoseGraph::isInitialized() const {
-  return (size() >= params_.num_frames_init && gps_factor_count_ >= params_.num_frames_init) || 
-         params_.fix_scale;
+  return ((size() >= params_.num_frames_init && gps_factor_count_ >= params_.num_frames_init) || 
+         params_.fix_scale) && getScale() > 0;
 }

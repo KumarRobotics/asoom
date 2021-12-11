@@ -7,4 +7,12 @@
     <remap from="~pose" to="/dso/pose"/>
     <remap from="~gps" to="/ublox/fix"/>
   </node>
+
+  <node pkg="image_publisher" type="image_publisher" name="map_image_publisher" args="$(find asoom)/maps/grace_quarters.png">
+    <param name="frame_id" value="map_img"/>
+    <param name="flip_horizontal" value="false"/>
+    <param name="publish_rate" value="1"/>
+  </node>
+
+  <node pkg="tf2_ros" type="static_transform_publisher" name="link1_broadcaster" args="384110.00 4356585.69 -3 0 0 0 1 utm map_img" />
 </launch>
