@@ -52,6 +52,9 @@
   <build_depend>roscpp</build_depend>
   <build_export_depend>roscpp</build_export_depend>
   <exec_depend>roscpp</exec_depend>
+  <build_depend>roslib</build_depend>
+  <build_export_depend>roslib</build_export_depend>
+  <exec_depend>roslib</exec_depend>
   <build_depend>cv_bridge</build_depend>
   <build_export_depend>cv_bridge</build_export_depend>
   <exec_depend>cv_bridge</exec_depend>
@@ -70,6 +73,9 @@
   <build_depend>tf2_ros</build_depend>
   <build_export_depend>tf2_ros</build_export_depend>
   <exec_depend>tf2_ros</exec_depend>
+  <build_depend>yaml-cpp</build_depend>
+  <build_export_depend>yaml-cpp</build_export_depend>
+  <exec_depend>yaml-cpp</exec_depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

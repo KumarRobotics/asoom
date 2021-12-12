@@ -15,6 +15,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  roslib
   cv_bridge
   message_filters
   sensor_msgs
@@ -26,6 +27,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## System dependencies are found with CMake's conventions
 find_package(GTSAM REQUIRED)
 find_package(Eigen3 REQUIRED NO_MODULE)
+find_package(OpenCV REQUIRED COMPONENTS core imgproc calib3d)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -148,7 +150,8 @@ add_dependencies(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
   gtsam
   Eigen3::Eigen
-  ${catkin_LIBRARIES}
+  ${OpenCV_LIBS}
+  yaml-cpp
 )
 
 ## Declare a C++ executable
@@ -217,7 +220,10 @@ catkin_add_gtest(${PROJECT_NAME}-test
   test/test_rectifier.cpp
 )
 if(TARGET ${PROJECT_NAME}-test)
-  target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
+  target_link_libraries(${PROJECT_NAME}-test 
+    ${PROJECT_NAME} 
+    ${catkin_LIBRARIES}
+  )
 endif()
 
 ## Add folders to be run by python nosetests
