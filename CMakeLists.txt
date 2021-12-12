@@ -27,7 +27,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## System dependencies are found with CMake's conventions
 find_package(GTSAM REQUIRED)
 find_package(Eigen3 REQUIRED NO_MODULE)
-find_package(OpenCV REQUIRED COMPONENTS core imgproc calib3d)
+find_package(OpenCV REQUIRED COMPONENTS core imgproc calib3d imgcodecs)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -137,6 +137,7 @@ add_library(${PROJECT_NAME}
   src/asoom.cpp
   src/pose_graph.cpp
   src/rectifier.cpp
+  src/dense_stereo.cpp
 )
 
 ## Add cmake target dependencies of the library
@@ -218,6 +219,7 @@ catkin_add_gtest(${PROJECT_NAME}-test
   test/test_pose_graph.cpp
   test/test_utils.cpp
   test/test_rectifier.cpp
+  test/test_dense_stereo.cpp
 )
 if(TARGET ${PROJECT_NAME}-test)
   target_link_libraries(${PROJECT_NAME}-test 

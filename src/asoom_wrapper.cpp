@@ -17,16 +17,16 @@ ASOOMWrapper::ASOOMWrapper(ros::NodeHandle& nh)
   // Top level parameters
   ASOOM::Params asoom_params;
   nh_.param<int>("pgo_thread_period_ms", asoom_params.pgo_thread_period_ms, 1000);
-  nh_.param<float>("keyframe_dist_thresh_m", asoom_params.keyframe_dist_thresh_m, 5);
+  nh_.param<float>("keyframe_dist_thresh_m", asoom_params.keyframe_dist_thresh_m, 1);
 
   // Parameters for PGO
   double pg_bs_p, pg_bs_r, pg_gs, pg_gsps;
   bool pg_fs;
   int pg_nfi;
-  nh_.param<double>("pose_graph_between_sigmas_pos", pg_bs_p, 0.1);
-  nh_.param<double>("pose_graph_between_sigmas_rot", pg_bs_r, 0.1);
-  nh_.param<double>("pose_graph_gps_sigmas", pg_gs, 0.1);
-  nh_.param<double>("pose_graph_gps_sigma_per_sec", pg_gsps, 0.0);
+  nh_.param<double>("pose_graph_between_sigmas_pos", pg_bs_p, 0.05);
+  nh_.param<double>("pose_graph_between_sigmas_rot", pg_bs_r, 0.05);
+  nh_.param<double>("pose_graph_gps_sigmas", pg_gs, 0.5);
+  nh_.param<double>("pose_graph_gps_sigma_per_sec", pg_gsps, 0.5);
   nh_.param<bool>("pose_graph_fix_scale", pg_fs, false);
   nh_.param<int>("pose_graph_num_frames_init", pg_nfi, 5);
   PoseGraph::Params pose_graph_params(pg_bs_p, pg_bs_r, pg_gs, pg_gsps, pg_fs, pg_nfi);

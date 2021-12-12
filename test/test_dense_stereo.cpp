@@ -1,31 +1,10 @@
 #include <gtest/gtest.h>
 #include <ros/package.h>
 #include <opencv2/imgcodecs/imgcodecs.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
+#include "asoom/dense_stereo.h"
 #include "asoom/rectifier.h"
 
-TEST(ASOOM_rectifier_test, test_init) {
-  EXPECT_THROW({
-      Rectifier rect("/no/config/here");
-    }, YAML::BadFile
-  );
-
-  Rectifier rect(ros::package::getPath("asoom") + "/config/grace_quarters.yaml");
-  Eigen::Matrix3d K = rect.getOutputK();
-
-  // Sanity check the matrix
-  EXPECT_FLOAT_EQ(K(1, 0), 0);
-  EXPECT_FLOAT_EQ(K(0, 1), 0);
-  EXPECT_FLOAT_EQ(K(2, 0), 0);
-  EXPECT_FLOAT_EQ(K(2, 1), 0);
-  EXPECT_FLOAT_EQ(K(2, 2), 1);
-  EXPECT_TRUE(K(0, 0) > 100);
-  EXPECT_TRUE(K(1, 1) > 100);
-  EXPECT_TRUE(K(0, 2) > 100);
-  EXPECT_TRUE(K(1, 2) > 100);
-}
-
-TEST(ASOOM_rectifier_test, test_rect) {
+TEST(ASOOM_dense_stereo_test, test_stereo) {
   /*
   2 Keyframes:
   1635642164881558848:
@@ -77,24 +56,18 @@ TEST(ASOOM_rectifier_test, test_rect) {
   cv::Mat i1m1, i1m2, i2m1, i2m2;
   auto transforms = rect.genRectifyMaps(k1, k2, i1m1, i1m2, i2m1, i2m2);
 
-  // Each rotation should take each pose to a common frame
-  EXPECT_NEAR(Eigen::Quaterniond((pose1 * transforms.first).rotation()).angularDistance(
-              Eigen::Quaterniond((pose2 * transforms.second).rotation())), 0, 0.01);
-
   cv::Mat rect1, rect2;
   rect.rectifyImage(im1, i1m1, i1m2, rect1);
   rect.rectifyImage(im2, i2m1, i2m2, rect2);
 
-  EXPECT_EQ(rect1.size().height*2, im1.size().height);
-  EXPECT_EQ(rect1.size().width*2, im1.size().width);
+  DenseStereo stereo(DenseStereo::Params{});
+  cv::Mat disp;
+  stereo.computeDepth(rect1, rect2, disp);
+  cv::imwrite("asoom_disp_viz.png", disp*255/80);
+  std::cout << "Wrote asoom_disp_viz.png to test disparity" << std::endl << std::flush;
 
-  cv::Mat rect_viz;
-  cv::hconcat(rect1, rect2, rect_viz);
-  // Draw horizontal lines for checking alignment
-  for (int y=10; y<rect_viz.size().height; y+=50) {
-    cv::line(rect_viz, cv::Point(0, y), cv::Point(rect_viz.size().width, y), 
-        cv::Scalar(255, 255, 255));
-  }
-  cv::imwrite("asoom_rectification_viz.png", rect_viz);
-  std::cout << "Wrote asoom_rectification_viz.png to test rect" << std::endl << std::flush;
+  // Approximate depth at center of image
+  // d = (fx * baseline) / disp
+  EXPECT_NEAR(((pose1.translation() - pose2.translation()).norm() * rect.getOutputK()(0, 0)) / 
+    disp.at<double>(disp.size().height/2, disp.size().width/2), 30, 5);
 }
