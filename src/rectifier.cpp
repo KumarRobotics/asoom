@@ -48,9 +48,9 @@ std::pair<Eigen::Isometry3d, Eigen::Isometry3d> Rectifier::genRectifyMaps(
   Eigen::Vector3d T2 = key2.getPose().translation();
 
   Eigen::Matrix3d R = Eigen::Matrix3d::Zero();
-  R.col(0) = (T1 - T2).normalized();
-  R.col(1) = (R1.col(2).cross(R.col(0))).normalized();
-  R.col(2) = (R.col(0).cross(R.col(1))).normalized();
+  R.row(0) = (T1 - T2).normalized();
+  R.row(1) = (R1.row(2).cross(R.row(0))).normalized();
+  R.row(2) = (R.row(0).cross(R.row(1))).normalized();
 
   Eigen::Matrix3d R1diff = R1.inverse() * R;
   Eigen::Matrix3d R2diff = R2.inverse() * R;
