@@ -1,8 +1,9 @@
+#include <iostream>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
 #include "asoom/rectifier.h"
 
-Rectifier::Rectifier(const std::string& calib_path) {
+Rectifier::Rectifier(const std::string& calib_path, float scale) {
   YAML::Node calib = YAML::LoadFile(calib_path);
   if (calib["cam0"]["camera_model"].as<std::string>() != "pinhole" || 
       calib["cam0"]["distortion_model"].as<std::string>() != "radtan" ||
@@ -26,9 +27,12 @@ Rectifier::Rectifier(const std::string& calib_path) {
 
   input_size_.width = calib["cam0"]["resolution"][0].as<int>();
   input_size_.height = calib["cam0"]["resolution"][1].as<int>();
+  output_size_.width = input_size_.width * scale;
+  output_size_.height = input_size_.height * scale;
 
   // Now figure out what K should be for rectified images
-  output_K_ = cv::getOptimalNewCameraMatrix(input_K_, input_dist_, input_size_, 0);
+  output_K_ = cv::getOptimalNewCameraMatrix(input_K_, input_dist_, input_size_, 0,
+      output_size_);
 }
 
 std::pair<Eigen::Isometry3d, Eigen::Isometry3d> Rectifier::genRectifyMaps(
@@ -38,21 +42,33 @@ std::pair<Eigen::Isometry3d, Eigen::Isometry3d> Rectifier::genRectifyMaps(
   // Based on "A compact algorithm for rectification of stereo pairs",
   // Fusiello, Trucco, Verri, Machine Vision and Applications 2000
   
-  auto R1 = key1.getPose().rotation();
-  auto R2 = key2.getPose().rotation();
-  auto T1 = key1.getPose().translation();
-  auto T2 = key2.getPose().translation();
+  Eigen::Matrix3d R1 = key1.getPose().rotation();
+  Eigen::Matrix3d R2 = key2.getPose().rotation();
+  Eigen::Vector3d T1 = key1.getPose().translation();
+  Eigen::Vector3d T2 = key2.getPose().translation();
 
   Eigen::Matrix3d R = Eigen::Matrix3d::Zero();
-  R.row(0) = (T1 - T2).normalized();
-  R.row(1) = (R1.row(2).cross(R.row(0))).normalized();
-  R.row(2) = (R.row(0).cross(R.row(1))).normalized();
+  R.col(0) = (T1 - T2).normalized();
+  R.col(1) = (R1.col(2).cross(R.col(0))).normalized();
+  R.col(2) = (R.col(0).cross(R.col(1))).normalized();
 
-  return std::make_pair(Eigen::Isometry3d(R1.inverse() * R), 
-                        Eigen::Isometry3d(R2.inverse() * R));
+  Eigen::Matrix3d R1diff = R1.inverse() * R;
+  Eigen::Matrix3d R2diff = R2.inverse() * R;
+
+  // Compute opencv remap maps
+  cv::Mat R1diff_cv, R2diff_cv;
+  cv::eigen2cv(R1diff, R1diff_cv);
+  cv::initUndistortRectifyMap(input_K_, input_dist_, R1diff_cv.inv(), output_K_, output_size_,
+      CV_16SC2, rect1_map1, rect1_map2);
+  cv::eigen2cv(R2diff, R2diff_cv);
+  cv::initUndistortRectifyMap(input_K_, input_dist_, R2diff_cv.inv(), output_K_, output_size_,
+      CV_16SC2, rect2_map1, rect2_map2);
+
+  return std::make_pair(Eigen::Isometry3d(R1diff), 
+                        Eigen::Isometry3d(R2diff));
 }
 
-void Rectifier::rectifyImage(const cv::Mat& input, const cv::Mat& map1, const cv::Mat& map2, 
+void Rectifier::rectifyImage(const cv::Mat& input, const cv::Mat& map1, const cv::Mat& map2,
     cv::Mat& output)
 {
   cv::remap(input, output, map1, map2, cv::INTER_LINEAR);

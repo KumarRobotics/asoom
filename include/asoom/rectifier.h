@@ -20,7 +20,11 @@ class Rectifier {
       }
     };
 
-    Rectifier(const std::string& calib_path);
+    /*!
+     * @param calib_path Path to calibration file in kalibr format
+     * @param scale Scale for final image.
+     */
+    Rectifier(const std::string& calib_path, float scale = 1);
 
     /*!
      * We could just modify in-situ, but this would require a write thread lock on 
@@ -36,7 +40,7 @@ class Rectifier {
      * @return Pair of relative rotation transforms
      */
     std::pair<Eigen::Isometry3d, Eigen::Isometry3d> genRectifyMaps(const Keyframe& key1,
-        const Keyframe& key2, cv::Mat& rect1_map1, cv::Mat& rect1_map2,
+        const Keyframe& key2, cv::Mat& rect1_map, cv::Mat& rect2_map,
         cv::Mat& rect2_map1, cv::Mat& rect2_map2);
 
     /*!
@@ -58,4 +62,5 @@ class Rectifier {
 
     //! Intrinsics for rectified images
     cv::Mat output_K_;
+    cv::Size output_size_;
 };
