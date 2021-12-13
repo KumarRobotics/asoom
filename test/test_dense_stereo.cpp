@@ -62,12 +62,27 @@ TEST(ASOOM_dense_stereo_test, test_stereo) {
 
   DenseStereo stereo(DenseStereo::Params{});
   cv::Mat disp;
-  stereo.computeDepth(rect1, rect2, disp);
+  stereo.computeDisp(rect1, rect2, disp);
   cv::imwrite("asoom_disp_viz.png", disp*255/80);
   std::cout << "Wrote asoom_disp_viz.png to test disparity" << std::endl << std::flush;
 
   // Approximate depth at center of image
   // d = (fx * baseline) / disp
-  EXPECT_NEAR(((pose1.translation() - pose2.translation()).norm() * rect.getOutputK()(0, 0)) / 
-    disp.at<double>(disp.size().height/2, disp.size().width/2), 30, 5);
+  double depth_center = ((pose1.translation() - pose2.translation()).norm() * 
+      rect.getOutputK()(0, 0)) / disp.at<double>(disp.size().height/2, disp.size().width/2);
+  EXPECT_NEAR(depth_center, 30, 5);
+  // Should be 0 everywhere where depth undefined
+  EXPECT_FLOAT_EQ(disp.at<double>(10, disp.size().width-1), 0);
+
+  // Have not set intrinsics yet
+  EXPECT_THROW({
+      stereo.projectDepth(disp, 1);
+    }, DenseStereo::intrinsic_mismatch_exception
+  );
+  stereo.setIntrinsics(rect.getOutputK(), rect.getOutputSize());
+
+  Eigen::Array3Xd depth_pc = stereo.projectDepth(disp, 
+      (pose1.translation() - pose2.translation()).norm());
+  EXPECT_FLOAT_EQ(depth_pc(2, disp.size().height*disp.size().width/2 + disp.size().width/2), 
+      depth_center);
 }

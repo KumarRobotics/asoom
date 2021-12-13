@@ -1,4 +1,5 @@
 #include <iostream>
+#include <opencv2/highgui/highgui.hpp>
 #include "asoom/dense_stereo.h"
 
 DenseStereo::DenseStereo(const Params& params) {
@@ -10,9 +11,41 @@ DenseStereo::DenseStereo(const Params& params) {
       params.uniqueness_ratio, params.speckle_window_size, params.speckle_range);
 }
 
-void DenseStereo::computeDepth(const cv::Mat& im1, const cv::Mat& im2, cv::Mat& disp) {
+void DenseStereo::computeDisp(const cv::Mat& im1, const cv::Mat& im2, cv::Mat& disp) {
   stereo_->compute(im1, im2, disp);
   // We use 64F so when converting to Eigen everything is double
   disp.convertTo(disp, CV_64F);
   disp /= std::pow(2, 4);
+
+  // Mask out where one or the other images is not there
+  cv::Mat imgcomb, imgbuf, mask;
+  cv::cvtColor(im1, imgbuf, cv::COLOR_BGR2GRAY);
+  cv::cvtColor(im2, imgcomb, cv::COLOR_BGR2GRAY);
+  cv::bitwise_and(imgcomb, 0, imgcomb, imgbuf<1);
+  // Borders tend to be weird
+  cv::dilate(imgcomb<1, mask, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(30, 30)));
+  cv::bitwise_and(disp, 0, disp, mask);
+}
+
+void DenseStereo::setIntrinsics(const Eigen::Matrix3d& K, const cv::Size& size) {
+  K_ = K;
+  img_plane_pts_ = Eigen::Array3Xd::Ones(3, size.height * size.width);
+  // Note: These indices are assuming unrolled row-major a-la OpenCV
+  // Index for row
+  // 0,0,0,1,1,1,2,2,2,...
+  img_plane_pts_.row(0) = Eigen::RowVectorXi::LinSpaced(size.width*size.height, 
+      0, size.height-1).cast<double>();
+  // Index for col
+  // 0,1,2,0,1,2,...
+  img_plane_pts_.row(1) = Eigen::RowVectorXd::LinSpaced(size.width, 0, size.width-1).replicate(
+      1, size.height);
+}
+
+Eigen::Array3Xd DenseStereo::projectDepth(const cv::Mat& disp, double baseline) {
+  if (disp.size().height*disp.size().width != img_plane_pts_.cols()) {
+    throw intrinsic_mismatch_exception();
+  }
+
+  Eigen::Map<const Eigen::ArrayXd> disp_eig(disp.ptr<double>(), disp.rows*disp.cols);
+  return img_plane_pts_.rowwise() * (baseline * K_(0, 0) / disp_eig.transpose());
 }

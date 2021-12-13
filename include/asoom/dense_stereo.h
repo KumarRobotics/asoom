@@ -1,6 +1,7 @@
 #pragma once
 
 #include <opencv2/core/core.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
 #include "asoom/keyframe.h"
 
@@ -36,8 +37,26 @@ class DenseStereo {
      * @param im2 Second keyframe to compute depth of
      * @param disp Output disparity
      */
-    void computeDepth(const cv::Mat& im1, const cv::Mat& im2, cv::Mat& disp);
+    void computeDisp(const cv::Mat& im1, const cv::Mat& im2, cv::Mat& disp);
+
+    /*!
+     * Exception class to indicate calib we can't handle
+     */
+    class intrinsic_mismatch_exception: public std::exception
+    {
+      virtual const char* what() const throw()
+      {
+        return "Stereo Intrinsics incomparible with provided disparity";
+      }
+    };
+
+    Eigen::Array3Xd projectDepth(const cv::Mat& disp, double baseline);
+
+    void setIntrinsics(const Eigen::Matrix3d& K, const cv::Size& size);
 
   private:
     cv::Ptr<cv::StereoSGBM> stereo_;
+
+    Eigen::Array3Xd img_plane_pts_;
+    Eigen::Matrix3d K_;
 };

@@ -55,6 +55,10 @@ class Rectifier {
      */
     Eigen::Matrix3d getOutputK() const;
 
+    cv::Size getOutputSize() const {
+      return output_size_;
+    }
+
   private:
     //! Intrinsics and dist coeff for input camera
     cv::Mat input_K_, input_dist_;
