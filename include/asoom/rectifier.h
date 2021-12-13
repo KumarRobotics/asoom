@@ -7,6 +7,9 @@
 
 #include "asoom/keyframe.h"
 
+/*!
+ * Handle image rectification and undistortion before stereo
+ */
 class Rectifier {
   public:
     /*!

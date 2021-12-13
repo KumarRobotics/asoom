@@ -5,6 +5,10 @@
 #include <opencv2/calib3d/calib3d.hpp>
 #include "asoom/keyframe.h"
 
+/*!
+ * Wrap OpenCV SGBM, as well as provide functions for projecting disparity into
+ * a pointcloud
+ */
 class DenseStereo {
   public:
     struct Params {
@@ -40,7 +44,8 @@ class DenseStereo {
     void computeDisp(const cv::Mat& im1, const cv::Mat& im2, cv::Mat& disp);
 
     /*!
-     * Exception class to indicate calib we can't handle
+     * Exception class to catch size mismatches between precomputed image points
+     * and disparith in projectDepth
      */
     class intrinsic_mismatch_exception: public std::exception
     {
@@ -50,13 +55,23 @@ class DenseStereo {
       }
     };
 
+    /*!
+     * Note: Must call setIntrinsics first or will throw intrinsic_mismatch_exception
+     * @param disp Disparity from computeDisp
+     * @param baseline Stereo baseline, depth will have these units
+     */
     Eigen::Array3Xd projectDepth(const cv::Mat& disp, double baseline);
 
+    /*!
+     * Set camera intrinsics and precompute points on image plane
+     */
     void setIntrinsics(const Eigen::Matrix3d& K, const cv::Size& size);
 
   private:
+    //! OpenCV stereo class
     cv::Ptr<cv::StereoSGBM> stereo_;
 
+    //! Precomputed normalized points on image plane.  Speeds up depth projection
     Eigen::Array3Xd img_plane_pts_;
     Eigen::Matrix3d K_;
 };
