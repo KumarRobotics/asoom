@@ -4,6 +4,8 @@
 #include <shared_mutex>
 
 #include "asoom/pose_graph.h"
+#include "asoom/rectifier.h"
+#include "asoom/dense_stereo.h"
 #include "asoom/keyframe.h"
 
 /*!
@@ -14,21 +16,26 @@
 class ASOOM {
   public:
     struct Params {
-      //! Period for PGO thread to run in ms
+      //! Periods for threads to run at in ms
       int pgo_thread_period_ms;
+      int stereo_thread_period_ms;
 
       //! Distance threshold for creating new keyframe in meters
       float keyframe_dist_thresh_m;
 
-      Params(int ptpm = 1000, float kdtm = 5)
-        : pgo_thread_period_ms(ptpm), keyframe_dist_thresh_m(kdtm) {}
+      Params(int ptpm = 1000, int stpm = 1000, float kdtm = 5) :
+        pgo_thread_period_ms(ptpm), stereo_thread_period_ms(stpm), 
+        keyframe_dist_thresh_m(kdtm) {}
     };
 
     /*!
      * @param asoom_params High level params
      * @param pg_params Params forwarded to PoseGraph
+     * @param rect_params Params forwarded to Rectifier
+     * @param stereo_params Params forwarded to DenseStereo
      */
-    ASOOM(const Params& asoom_params, const PoseGraph::Params& pg_params);
+    ASOOM(const Params& asoom_params, const PoseGraph::Params& pg_params,
+      const Rectifier::Params& rect_params, const DenseStereo::Params& stereo_params);
     ~ASOOM();
 
     /*!
@@ -130,5 +137,33 @@ class ASOOM {
 
         //! Last pose, used for determining whether to create keyframe
         Eigen::Vector3d last_key_pos_;
+    };
+
+    //! Thread managing image rectification and depth computation
+    std::thread stereo_thread_;
+    class StereoThread {
+      public:
+        StereoThread(ASOOM *a, const Rectifier::Params& rp, const DenseStereo::Params& dsp) try : 
+          asoom_(a), rectifier_(rp), dense_stereo_(dsp) {
+        } catch (const std::exception& ex) {
+          // This usually happens when there is a yaml reading error
+          std::cout << "\033[31m" << "[ERROR] Cannot create StereoThread: " << ex.what() 
+            << "\033[0m" << std::endl;
+        }
+
+        bool operator()();
+      private:
+        std::vector<Keyframe> getKeyframesToCompute();
+
+        void computeDepths(std::vector<Keyframe>& frames);
+
+        void updateKeyframes(const std::vector<Keyframe>& frames);
+
+        Rectifier rectifier_;
+
+        DenseStereo dense_stereo_;
+
+        //! Pointer back to parent
+        ASOOM * const asoom_;
     };
 };

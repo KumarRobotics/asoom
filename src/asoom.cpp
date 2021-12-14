@@ -2,14 +2,17 @@
 
 #include "asoom/asoom.h"
 
-ASOOM::ASOOM(const Params& asoom_params, const PoseGraph::Params& pg_params) 
+ASOOM::ASOOM(const Params& asoom_params, const PoseGraph::Params& pg_params,
+    const Rectifier::Params& rect_params, const DenseStereo::Params& stereo_params) 
   : pose_graph_thread_(PoseGraphThread(this, pg_params)),
+    stereo_thread_(StereoThread(this, rect_params, stereo_params)),
     params_(asoom_params) {}
 
 ASOOM::~ASOOM() {
   // Set kill flag, then just wait for threads to complete
   exit_threads_flag_ = true;
   pose_graph_thread_.join();
+  stereo_thread_.join();
 }
 
 void ASOOM::addFrame(long stamp, cv::Mat& img, const Eigen::Isometry3d& pose) {
@@ -130,5 +133,88 @@ void ASOOM::PoseGraphThread::updateKeyframes() {
     if (new_pose) {
       key.second->setPose(*new_pose);
     }
+  }
+}
+
+/***********************************************************
+ * Stereo Thread
+ ***********************************************************/
+
+bool ASOOM::StereoThread::operator()() {
+  using namespace std::chrono;
+  auto next = steady_clock::now();
+  while (!asoom_->exit_threads_flag_) {
+    auto start_t = high_resolution_clock::now();
+    auto keyframes_to_compute = getKeyframesToCompute();
+    auto buffer_keyframes_t = high_resolution_clock::now();
+    computeDepths(keyframes_to_compute);
+    auto compute_depths_t = high_resolution_clock::now();
+    updateKeyframes(keyframes_to_compute);
+    auto update_keyframes_t = high_resolution_clock::now();
+    
+    std::cout << "\033[34m" << "[StT] ======== Stereo Thread ========" << std::endl << 
+      "[StT] Buffering Keyframes: " << 
+      duration_cast<microseconds>(buffer_keyframes_t - start_t).count() << "us" << std::endl <<
+      "[StT] Computing Depths: " << 
+      duration_cast<microseconds>(compute_depths_t - buffer_keyframes_t).count() << "us" << std::endl <<
+      "[StT] Keyframe Updating: " << 
+      duration_cast<microseconds>(update_keyframes_t - compute_depths_t).count() << "us" << std::endl <<
+      "\033[0m" << std::flush;
+
+    next += milliseconds(asoom_->params_.stereo_thread_period_ms);
+    std::this_thread::sleep_until(next);
+  }
+  std::cout << "\033[34m" << "[StT] Stereo Thread Exited" << "\033[0m" << std::endl;
+  return true;
+}
+
+std::vector<Keyframe> ASOOM::StereoThread::getKeyframesToCompute() {
+  std::shared_lock lock(asoom_->keyframes_.m);
+
+  std::vector<Keyframe> keyframes_to_compute;
+  std::shared_ptr<Keyframe> last_keyframe;
+  for (const auto& frame : asoom_->keyframes_.frames) {
+    if (!frame.second->hasDepth()) {
+      if (last_keyframe) {
+        if (last_keyframe->hasDepth()) {
+          // If the previous keyframe has depth then it has not already been added
+          keyframes_to_compute.push_back(*last_keyframe);
+        }
+      }
+      // When we do this we call Keyframe's copy constructor
+      // Notably the image copies (cv::Mat) are not deep.  Makes this more efficient,
+      // but need to be careful for thread safety
+      keyframes_to_compute.push_back(*frame.second);
+    }
+    last_keyframe = frame.second;
+  }
+
+  return keyframes_to_compute;
+}
+
+void ASOOM::StereoThread::computeDepths(std::vector<Keyframe>& frames) {
+  // Use c ptr because we don't want the pointer to try to manage the underlying memory
+  Keyframe *last_frame = nullptr;
+  cv::Mat i1m1, i1m2, i2m1, i2m2, rect1, rect2, disp;
+  for (auto& frame : frames) {
+    if (last_frame != nullptr) {
+      auto new_dposes = rectifier_.genRectifyMaps(frame, *last_frame, i1m1, i1m2, i2m1, i2m2);
+      // Rectify images
+      rectifier_.rectifyImage(frame.getImg(), i1m1, i1m2, rect1);
+      rectifier_.rectifyImage(last_frame->getImg(), i2m1, i2m2, rect2);
+
+      // Do stereo
+      dense_stereo_.computeDisp(rect1, rect2, disp);
+      double baseline = (new_dposes.first.translation() - new_dposes.second.translation()).norm();
+      frame.setDepth(new_dposes.first, rect1, dense_stereo_.projectDepth(disp, baseline));
+    }
+    last_frame = &frame;
+  }
+}
+
+void ASOOM::StereoThread::updateKeyframes(const std::vector<Keyframe>& frames) {
+  std::unique_lock lock(asoom_->keyframes_.m);
+  for (const auto& frame : frames) {
+    asoom_->keyframes_.frames.at(frame.getStamp())->setDepth(frame);
   }
 }

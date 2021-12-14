@@ -48,7 +48,7 @@ Eigen::Array3Xd DenseStereo::projectDepth(const cv::Mat& disp, double baseline) 
 
   // Convert to Eigen and flatten while we are at it
   // Flattens to row-major, since OpenCV is managing storage here
-  Eigen::Map<const Eigen::ArrayXd> disp_eig(disp.ptr<double>(), disp.rows*disp.cols);
+  Eigen::Map<const Eigen::RowVectorXd> disp_eig(disp.ptr<double>(), disp.rows*disp.cols);
   // All the invalid zeros will now be infs due to inversion
-  return img_plane_pts_.rowwise() * (baseline * K_(0, 0) / disp_eig.transpose());
+  return img_plane_pts_.rowwise() * (baseline * K_(0, 0) / disp_eig.array());
 }

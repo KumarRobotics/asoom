@@ -135,6 +135,7 @@ include_directories(
 ## Declare a C++ library
 add_library(${PROJECT_NAME}
   src/asoom.cpp
+  src/keyframe.cpp
   src/pose_graph.cpp
   src/rectifier.cpp
   src/dense_stereo.cpp

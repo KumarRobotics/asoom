@@ -2,7 +2,8 @@
 #include "asoom/asoom.h"
 
 TEST(ASOOM_asoom_test, test_pgo_thread) {
-  ASOOM a(ASOOM::Params(100, 1.5), PoseGraph::Params(0.1, 0.1, 0.1, 0, true));
+  ASOOM a(ASOOM::Params(100, 100, 1.5), PoseGraph::Params(0.1, 0.1, 0.1, 0, true),
+      Rectifier::Params(), DenseStereo::Params());
 
   // Sanity check
   EXPECT_EQ(a.getGraph().size(), 0);
@@ -31,7 +32,8 @@ TEST(ASOOM_asoom_test, test_pgo_thread) {
 }
 
 TEST(ASOOM_asoom_test, test_pgo_gps_thread) {
-  ASOOM a(ASOOM::Params(100, 0), PoseGraph::Params(0.1, 0.1, 0.1, 0, false, 2));
+  ASOOM a(ASOOM::Params(100, 100, 0), PoseGraph::Params(0.1, 0.1, 0.1, 0, false, 2),
+      Rectifier::Params(), DenseStereo::Params());
 
   // Sanity check
   EXPECT_EQ(a.getGraph().size(), 0);
@@ -64,4 +66,7 @@ TEST(ASOOM_asoom_test, test_pgo_gps_thread) {
   // Now we have initialized, make sure next pose is in the right place
   ASSERT_EQ(poses.size(), 1);
   EXPECT_FLOAT_EQ(poses[0].translation()[0], 30);
+}
+
+TEST(ASOOM_asoom_test, test_stereo_thread) {
 }

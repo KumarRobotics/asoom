@@ -3,8 +3,13 @@
 #include <opencv2/calib3d/calib3d.hpp>
 #include "asoom/rectifier.h"
 
-Rectifier::Rectifier(const std::string& calib_path, float scale) {
-  YAML::Node calib = YAML::LoadFile(calib_path);
+Rectifier::Rectifier(const Params& params) {
+  if (params.calib_path == NO_IMGS) {
+    // Empty calib path, don't do anything
+    return;
+  }
+
+  const YAML::Node calib = YAML::LoadFile(params.calib_path);
   if (calib["cam0"]["camera_model"].as<std::string>() != "pinhole" || 
       calib["cam0"]["distortion_model"].as<std::string>() != "radtan" ||
       calib["cam0"]["distortion_coeffs"].size() < 4 ||
@@ -27,8 +32,8 @@ Rectifier::Rectifier(const std::string& calib_path, float scale) {
 
   input_size_.width = calib["cam0"]["resolution"][0].as<int>();
   input_size_.height = calib["cam0"]["resolution"][1].as<int>();
-  output_size_.width = input_size_.width * scale;
-  output_size_.height = input_size_.height * scale;
+  output_size_.width = input_size_.width * params.scale;
+  output_size_.height = input_size_.height * params.scale;
 
   // Now figure out what K should be for rectified images
   output_K_ = cv::getOptimalNewCameraMatrix(input_K_, input_dist_, input_size_, 0,

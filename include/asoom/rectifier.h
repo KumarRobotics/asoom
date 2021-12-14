@@ -23,11 +23,21 @@ class Rectifier {
       }
     };
 
-    /*!
-     * @param calib_path Path to calibration file in kalibr format
-     * @param scale Scale for final image.
-     */
-    Rectifier(const std::string& calib_path, float scale = 1);
+    inline static const std::string NO_IMGS = "NO_IMGS_MODE";
+    struct Params {
+      //! Path to calibration file in kalibr format
+      std::string calib_path;
+
+      //! Scale for final image (implicitly resize)
+      float scale;
+
+      Params(const std::string& cp, float s) :
+        calib_path(cp), scale(s) {}
+
+      Params() : Params(NO_IMGS, 0) {}
+    };
+
+    Rectifier(const Params& params);
 
     /*!
      * We could just modify in-situ, but this would require a write thread lock on 

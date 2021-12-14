@@ -52,7 +52,8 @@ TEST(ASOOM_dense_stereo_test, test_stereo) {
         0.0986779)); //wxyz
   Keyframe k2(1635642165797544512, im2, pose2);
 
-  Rectifier rect(ros::package::getPath("asoom") + "/config/grace_quarters.yaml", 0.5);
+  Rectifier rect(Rectifier::Params(
+        ros::package::getPath("asoom") + "/config/grace_quarters.yaml", 0.5));
   cv::Mat i1m1, i1m2, i2m1, i2m2;
   auto transforms = rect.genRectifyMaps(k1, k2, i1m1, i1m2, i2m1, i2m2);
 

@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
   <node pkg="asoom" type="asoom_node" name="asoom_node" output="screen">
-    <param name="require_imgs" value="False"/>
+    <param name="rectifier_calib_path" value="$(find asoom)/config/grace_quarters.yaml"/>
+    <param name="require_imgs" value="True"/>
     <param name="pose_graph_fix_scale" value="False"/>
 
     <remap from="~pose" to="/dso/pose"/>

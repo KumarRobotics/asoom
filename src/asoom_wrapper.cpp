@@ -17,6 +17,7 @@ ASOOMWrapper::ASOOMWrapper(ros::NodeHandle& nh)
   // Top level parameters
   ASOOM::Params asoom_params;
   nh_.param<int>("pgo_thread_period_ms", asoom_params.pgo_thread_period_ms, 1000);
+  nh_.param<int>("stereo_thread_period_ms", asoom_params.stereo_thread_period_ms, 1000);
   nh_.param<float>("keyframe_dist_thresh_m", asoom_params.keyframe_dist_thresh_m, 1);
 
   // Parameters for PGO
@@ -31,6 +32,20 @@ ASOOMWrapper::ASOOMWrapper(ros::NodeHandle& nh)
   nh_.param<int>("pose_graph_num_frames_init", pg_nfi, 5);
   PoseGraph::Params pose_graph_params(pg_bs_p, pg_bs_r, pg_gs, pg_gsps, pg_fs, pg_nfi);
 
+  //Parameters for Rectifier
+  std::string r_calib_path;
+  float r_scale;
+  if (require_imgs_) {
+    nh_.param<std::string>("rectifier_calib_path", r_calib_path, "");
+  } else {
+    r_calib_path = Rectifier::NO_IMGS;
+  }
+  nh_.param<float>("rectifier_scale", r_scale, 0.5);
+  Rectifier::Params rectifier_params(r_calib_path, r_scale);
+
+  //Parameters for Stereo
+  DenseStereo::Params stereo_params;
+
   std::cout << "\033[32m" << "[ROS] ======== Configuration ========" << std::endl <<
     "[ROS] require_imgs: " << require_imgs_ << std::endl <<
     "[ROS] pgo_thread_period_ms: " << asoom_params.pgo_thread_period_ms << std::endl <<
@@ -41,9 +56,12 @@ ASOOMWrapper::ASOOMWrapper(ros::NodeHandle& nh)
     "[ROS] pose_graph_gps_sigma_per_sec: " << pg_gsps << std::endl <<
     "[ROS] pose_graph_fix_scale: " << pg_fs << std::endl <<
     "[ROS] pose_graph_num_frames_init: " << pg_nfi << std::endl <<
+    "[ROS] rectifier_calib_path: " << r_calib_path << std::endl <<
+    "[ROS] rectifier_scale: " << r_scale << std::endl <<
     "[ROS] ====== End Configuration ======" << "\033[0m" << std::endl;
 
-  asoom_ = std::make_unique<ASOOM>(asoom_params, pose_graph_params);
+  asoom_ = std::make_unique<ASOOM>(asoom_params, pose_graph_params, rectifier_params, 
+      stereo_params);
 }
 
 void ASOOMWrapper::initialize() {
