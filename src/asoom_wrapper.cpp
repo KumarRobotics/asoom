@@ -3,6 +3,9 @@
 #include <cv_bridge/cv_bridge.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <geometry_msgs/TransformStamped.h>
+#include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/PointField.h>
+#include <visualization_msgs/MarkerArray.h>
 
 #include "asoom/asoom_wrapper.h"
 #include "asoom/utils.h"
@@ -45,19 +48,42 @@ ASOOMWrapper::ASOOMWrapper(ros::NodeHandle& nh)
 
   //Parameters for Stereo
   DenseStereo::Params stereo_params;
+  nh_.param<int>("stereo_min_disparity", stereo_params.min_disparity, 1);
+  nh_.param<int>("stereo_num_disparities", stereo_params.num_disparities, 80);
+  nh_.param<int>("stereo_block_size", stereo_params.block_size, 9);
+  nh_.param<int>("stereo_P1_coeff", stereo_params.P1_coeff, 1);
+  nh_.param<int>("stereo_P2_coeff", stereo_params.P2_coeff, 3);
+  nh_.param<int>("stereo_disp_12_map_diff", stereo_params.disp_12_map_diff, 0);
+  nh_.param<int>("stereo_pre_filter_cap", stereo_params.pre_filter_cap, 35);
+  nh_.param<int>("stereo_uniqueness_ratio", stereo_params.uniqueness_ratio, 10);
+  nh_.param<int>("stereo_speckle_window_size", stereo_params.speckle_window_size, 100);
+  nh_.param<int>("stereo_speckle_range", stereo_params.speckle_range, 20);
 
   std::cout << "\033[32m" << "[ROS] ======== Configuration ========" << std::endl <<
     "[ROS] require_imgs: " << require_imgs_ << std::endl <<
     "[ROS] pgo_thread_period_ms: " << asoom_params.pgo_thread_period_ms << std::endl <<
     "[ROS] keyframe_dist_thresh_m: " << asoom_params.keyframe_dist_thresh_m << std::endl <<
+    "[ROS] ===============================" << std::endl <<
     "[ROS] pose_graph_between_sigmas_pos: " << pg_bs_p << std::endl <<
     "[ROS] pose_graph_between_sigmas_rot: " << pg_bs_r << std::endl <<
     "[ROS] pose_graph_gps_sigmas: " << pg_gs << std::endl <<
     "[ROS] pose_graph_gps_sigma_per_sec: " << pg_gsps << std::endl <<
     "[ROS] pose_graph_fix_scale: " << pg_fs << std::endl <<
     "[ROS] pose_graph_num_frames_init: " << pg_nfi << std::endl <<
+    "[ROS] ===============================" << std::endl <<
     "[ROS] rectifier_calib_path: " << r_calib_path << std::endl <<
     "[ROS] rectifier_scale: " << r_scale << std::endl <<
+    "[ROS] ===============================" << std::endl <<
+    "[ROS] stereo_min_disparity: " << stereo_params.min_disparity << std::endl <<
+    "[ROS] stereo_num_disparities:" << stereo_params.num_disparities << std::endl <<
+    "[ROS] stereo_block_size: " << stereo_params.block_size << std::endl <<
+    "[ROS] stereo_P1_coeff: " << stereo_params.P1_coeff << std::endl << 
+    "[ROS] stereo_P2_coeff: " << stereo_params.P2_coeff << std::endl << 
+    "[ROS] stereo_disp_12_map_diff: " << stereo_params.disp_12_map_diff << std::endl << 
+    "[ROS] stereo_pre_filter_cap: " << stereo_params.pre_filter_cap << std::endl << 
+    "[ROS] stereo_uniqueness_ratio:" << stereo_params.uniqueness_ratio << std::endl << 
+    "[ROS] stereo_speckle_window_size: " << stereo_params.speckle_window_size << std::endl << 
+    "[ROS] stereo_speckle_range: " << stereo_params.speckle_range << std::endl << 
     "[ROS] ====== End Configuration ======" << "\033[0m" << std::endl;
 
   asoom_ = std::make_unique<ASOOM>(asoom_params, pose_graph_params, rectifier_params, 
@@ -81,6 +107,7 @@ void ASOOMWrapper::initialize() {
   gps_sub_ = nh_.subscribe<sensor_msgs::NavSatFix>("gps", 10, &ASOOMWrapper::gpsCallback, this);
 
   trajectory_viz_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("viz", 1);
+  recent_cloud_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("recent_cloud", 1);
 
   output_timer_ = nh_.createTimer(ros::Duration(1.0), &ASOOMWrapper::outputCallback, this);
 }
@@ -109,14 +136,25 @@ std::vector<Eigen::Vector3d> ASOOMWrapper::initFrustumPts(float scale) {
 
 void ASOOMWrapper::outputCallback(const ros::TimerEvent& event) {
   using namespace std::chrono;
-  auto start_t = high_resolution_clock::now();
 
+  auto start_t = high_resolution_clock::now();
+  ros::Time time;
+  time.fromNSec(asoom_->getMostRecentStamp());
+  publishPoseGraphViz(time);
+  publishRecentPointCloud(time);
+  publishUTMTransform(time);
+  auto end_t = high_resolution_clock::now();
+
+  std::cout << "\033[32m" << "[ROS] Output Visualization: " <<
+      duration_cast<microseconds>(end_t - start_t).count() << "us" << "\033[0m" << std::endl
+        << std::flush;
+}
+
+void ASOOMWrapper::publishPoseGraphViz(const ros::Time& time) {
   visualization_msgs::MarkerArray marker_array;
   visualization_msgs::Marker traj_marker, cam_marker;
 
   traj_marker.header.frame_id = "world";
-  ros::Time time;
-  time.fromNSec(asoom_->getMostRecentStamp());
   traj_marker.header.stamp = time;
   traj_marker.ns = "trajectory";
   traj_marker.id = 0;
@@ -161,13 +199,59 @@ void ASOOMWrapper::outputCallback(const ros::TimerEvent& event) {
   marker_array.markers.push_back(traj_marker);
   marker_array.markers.push_back(cam_marker);
 
-  auto end_t = high_resolution_clock::now();
-  std::cout << "\033[32m" << "[ROS] Output Visualization: " <<
-      duration_cast<microseconds>(end_t - start_t).count() << "us" << "\033[0m" << std::endl
-        << std::flush;
-
   trajectory_viz_pub_.publish(marker_array);
-  publishUTMTransform(time);
+}
+
+void ASOOMWrapper::publishRecentPointCloud(const ros::Time& time) {
+  long stamp = asoom_->getMostRecentStampWithDepth();
+  if (stamp < 0) {
+    // No keyframes with depth yet
+    return;
+  }
+  Eigen::Array4Xf pc = asoom_->getDepthCloud(stamp);
+
+  sensor_msgs::PointCloud2 cloud;
+  cloud.header.stamp = time;
+  cloud.header.frame_id = "world";
+  cloud.height = 1;
+  cloud.width = pc.cols();
+
+  sensor_msgs::PointField x_field;
+  x_field.name = "x";
+  x_field.offset = 0;
+  x_field.datatype = sensor_msgs::PointField::FLOAT32;
+  x_field.count = 1;
+  cloud.fields.push_back(x_field);
+
+  sensor_msgs::PointField y_field;
+  y_field.name = "y";
+  y_field.offset = 4;
+  y_field.datatype = sensor_msgs::PointField::FLOAT32;
+  y_field.count = 1;
+  cloud.fields.push_back(y_field);
+
+  sensor_msgs::PointField z_field;
+  z_field.name = "z";
+  z_field.offset = 8;
+  z_field.datatype = sensor_msgs::PointField::FLOAT32;
+  z_field.count = 1;
+  cloud.fields.push_back(z_field);
+
+  sensor_msgs::PointField rgb_field;
+  rgb_field.name = "rgb";
+  rgb_field.offset = 12;
+  rgb_field.datatype = sensor_msgs::PointField::FLOAT32;
+  rgb_field.count = 1;
+  cloud.fields.push_back(rgb_field);
+
+  cloud.point_step = 16;
+  cloud.row_step = cloud.point_step * cloud.width;
+  cloud.is_dense = true;
+
+  cloud.data.insert(cloud.data.end(), reinterpret_cast<char *>(pc.data()), 
+      reinterpret_cast<char *>(pc.data()) + cloud.row_step*cloud.height);
+
+  recent_cloud_pub_.publish(cloud);
 }
 
 void ASOOMWrapper::publishUTMTransform(const ros::Time& time) {

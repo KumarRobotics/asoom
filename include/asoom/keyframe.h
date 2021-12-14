@@ -4,6 +4,7 @@
 #include <opencv2/core/core.hpp>
 #include <memory>
 #include <map>
+#include <iostream>
 
 namespace Eigen {
   using Array5Xd = Array<double, 5, Dynamic>;

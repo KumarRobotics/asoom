@@ -39,6 +39,8 @@ void DenseStereo::setIntrinsics(const Eigen::Matrix3d& K, const cv::Size& size) 
   // 0,1,2,0,1,2,...
   img_plane_pts_.row(1) = Eigen::RowVectorXd::LinSpaced(size.width, 0, size.width-1).replicate(
       1, size.height);
+
+  img_plane_pts_ = K_.inverse() * img_plane_pts_.matrix();
 }
 
 std::shared_ptr<Eigen::Array3Xd> DenseStereo::projectDepth(

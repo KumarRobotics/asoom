@@ -86,4 +86,5 @@ TEST(ASOOM_dense_stereo_test, test_stereo) {
       (pose1.translation() - pose2.translation()).norm());
   EXPECT_FLOAT_EQ((*depth_pc)(2, disp.size().height*disp.size().width/2 + disp.size().width/2), 
       depth_center);
+  EXPECT_TRUE(std::isinf((*depth_pc)(2, 0)));
 }

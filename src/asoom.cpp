@@ -1,4 +1,6 @@
 #include <chrono>
+#include <opencv2/imgcodecs/imgcodecs.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
 #include "asoom/asoom.h"
 
@@ -51,6 +53,16 @@ long ASOOM::getMostRecentStamp() const {
   // We could manage this inside the PoseGraph, but then we would
   // have to deal with thread-safety
   return most_recent_stamp_;
+}
+
+long ASOOM::getMostRecentStampWithDepth() {
+  std::shared_lock lock(keyframes_.m);
+  for (auto it=keyframes_.frames.rbegin(); it!=keyframes_.frames.rend(); it++) {
+    if (it->second->hasDepth()) {
+      return it->second->getStamp();
+    }
+  }
+  return -1;
 }
 
 /***********************************************************
@@ -217,7 +229,9 @@ void ASOOM::StereoThread::computeDepths(std::vector<Keyframe>& frames) {
 
       // Do stereo
       dense_stereo_.computeDisp(rect1, rect2, disp);
-      double baseline = (new_dposes.first.translation() - new_dposes.second.translation()).norm();
+
+      double baseline = 
+        (frame.getPose().translation() - last_frame->getPose().translation()).norm();
       frame.setDepth(new_dposes.first, rect1, dense_stereo_.projectDepth(disp, baseline));
     }
     last_frame = &frame;

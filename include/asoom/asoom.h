@@ -72,6 +72,13 @@ class ASOOM {
      */
     long getMostRecentStamp() const;
 
+    /*! 
+     * Similar to getMostRecentStamp, but require extant depth
+     *
+     * @return Timestamp in nsec.  Returns -1 if no keyframes with depth
+     */
+    long getMostRecentStampWithDepth();
+
   private:
     /***********************************************************
      * LOCAL VARIABLES
