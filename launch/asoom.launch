@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
-  <node pkg="asoom" type="asoom_node" name="asoom_node" output="screen">
+  <node pkg="image_transport" type="republish" name="republish" output="screen" args="compressed in:=/ovc/rgb/image_color out:=/asoom/img"/>
+
+  <node pkg="asoom" type="asoom_node" name="asoom" output="screen">
     <param name="rectifier_calib_path" value="$(find asoom)/config/grace_quarters.yaml"/>
     <param name="require_imgs" value="True"/>
     <param name="pose_graph_fix_scale" value="False"/>
