@@ -31,14 +31,14 @@ void DenseStereo::setIntrinsics(const Eigen::Matrix3d& K, const cv::Size& size) 
   K_ = K;
   img_plane_pts_ = Eigen::Array3Xd::Ones(3, size.height * size.width);
   // Note: These indices are assuming unrolled row-major a-la OpenCV
-  // Index for row
-  // 0,0,0,1,1,1,2,2,2,...
-  img_plane_pts_.row(0) = Eigen::RowVectorXi::LinSpaced(size.width*size.height, 
-      0, size.height-1).cast<double>();
-  // Index for col
+  // Index for col (x)
   // 0,1,2,0,1,2,...
-  img_plane_pts_.row(1) = Eigen::RowVectorXd::LinSpaced(size.width, 0, size.width-1).replicate(
+  img_plane_pts_.row(0) = Eigen::RowVectorXd::LinSpaced(size.width, 0, size.width-1).replicate(
       1, size.height);
+  // Index for row (y)
+  // 0,0,0,1,1,1,2,2,2,...
+  img_plane_pts_.row(1) = Eigen::RowVectorXi::LinSpaced(size.width*size.height, 
+      0, size.height-1).cast<double>();
 
   img_plane_pts_ = K_.inverse() * img_plane_pts_.matrix();
 }
