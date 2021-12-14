@@ -36,7 +36,10 @@ class Keyframe {
     }
 
     inline bool hasDepth() const {
-      return depth_.cols() > 0;
+      if (depth_) {
+        return true;
+      }
+      return false;
     }
 
     inline void setPose(const Eigen::Isometry3d& p) {
@@ -44,7 +47,7 @@ class Keyframe {
     }
 
     inline void setDepth(const Eigen::Isometry3d& dp, const cv::Mat& rect_img,
-        const Eigen::Array3Xd& depth) {
+        const std::shared_ptr<Eigen::Array3Xd>& depth) {
       rect_dpose_ = dp;
       rect_img_ = rect_img;
       depth_ = depth;
@@ -56,7 +59,7 @@ class Keyframe {
       depth_ = key.depth_;
     }
 
-    Eigen::Array4Xd getDepthCloud() const;
+    Eigen::Array4Xf getDepthCloud() const;
 
   private:
     /***********************************************************
@@ -72,12 +75,16 @@ class Keyframe {
     //! Corrective rotation for rectification
     Eigen::Isometry3d rect_dpose_{Eigen::Isometry3d::Identity()};
 
+    // These cv::Mats and shared_ptr allow Keyframes to be copied quickly, at the cost 
+    // of not being a deep copy.  However, this is ok, since these are never modified
+    // in keyframes_ directly once they are set.
+
     //! Image associated with keyframe
     const cv::Mat img_;
     cv::Mat rect_img_;
 
     //! Depth cloud associated with keyframe for the same image, stored row-major
-    Eigen::Array3Xd depth_{Eigen::Array3Xd::Zero(3, 0)};
+    std::shared_ptr<Eigen::Array3Xd> depth_;
 };
 
 // Using pointers here should make sort faster

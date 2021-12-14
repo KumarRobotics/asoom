@@ -42,6 +42,11 @@ std::vector<Eigen::Isometry3d> ASOOM::getGraph() {
   return frame_vec;
 }
 
+Eigen::Array4Xf ASOOM::getDepthCloud(long stamp) {
+  std::shared_lock lock(keyframes_.m);
+  return keyframes_.frames.at(stamp)->getDepthCloud();
+}
+
 long ASOOM::getMostRecentStamp() const {
   // We could manage this inside the PoseGraph, but then we would
   // have to deal with thread-safety
@@ -141,6 +146,12 @@ void ASOOM::PoseGraphThread::updateKeyframes() {
  ***********************************************************/
 
 bool ASOOM::StereoThread::operator()() {
+  if (!rectifier_.haveCalib()) {
+    std::cout << "\033[34m" << "[StT] Running in no image mode" << "\033[0m" << std::endl;
+    return true;
+  }
+  dense_stereo_.setIntrinsics(rectifier_.getOutputK(), rectifier_.getOutputSize());
+
   using namespace std::chrono;
   auto next = steady_clock::now();
   while (!asoom_->exit_threads_flag_) {
@@ -159,7 +170,8 @@ bool ASOOM::StereoThread::operator()() {
       duration_cast<microseconds>(compute_depths_t - buffer_keyframes_t).count() << "us" << std::endl <<
       "[StT] Keyframe Updating: " << 
       duration_cast<microseconds>(update_keyframes_t - compute_depths_t).count() << "us" << std::endl <<
-      "\033[0m" << std::flush;
+      "[StT] Total Keyframes Updated: " << std::max<int>(0, keyframes_to_compute.size() - 1) << 
+      std::endl << "\033[0m" << std::flush;
 
     next += milliseconds(asoom_->params_.stereo_thread_period_ms);
     std::this_thread::sleep_until(next);
@@ -215,6 +227,8 @@ void ASOOM::StereoThread::computeDepths(std::vector<Keyframe>& frames) {
 void ASOOM::StereoThread::updateKeyframes(const std::vector<Keyframe>& frames) {
   std::unique_lock lock(asoom_->keyframes_.m);
   for (const auto& frame : frames) {
-    asoom_->keyframes_.frames.at(frame.getStamp())->setDepth(frame);
+    if (!asoom_->keyframes_.frames.at(frame.getStamp())->hasDepth()) {
+      asoom_->keyframes_.frames.at(frame.getStamp())->setDepth(frame);
+    }
   }
 }

@@ -60,7 +60,7 @@ class DenseStereo {
      * @param disp Disparity from computeDisp
      * @param baseline Stereo baseline, depth will have these units
      */
-    Eigen::Array3Xd projectDepth(const cv::Mat& disp, double baseline);
+    std::shared_ptr<Eigen::Array3Xd> projectDepth(const cv::Mat& disp, double baseline);
 
     /*!
      * Set camera intrinsics and precompute points on image plane

@@ -41,7 +41,9 @@ void DenseStereo::setIntrinsics(const Eigen::Matrix3d& K, const cv::Size& size) 
       1, size.height);
 }
 
-Eigen::Array3Xd DenseStereo::projectDepth(const cv::Mat& disp, double baseline) {
+std::shared_ptr<Eigen::Array3Xd> DenseStereo::projectDepth(
+    const cv::Mat& disp, double baseline) 
+{
   if (disp.size().height*disp.size().width != img_plane_pts_.cols()) {
     throw intrinsic_mismatch_exception();
   }
@@ -50,5 +52,6 @@ Eigen::Array3Xd DenseStereo::projectDepth(const cv::Mat& disp, double baseline) 
   // Flattens to row-major, since OpenCV is managing storage here
   Eigen::Map<const Eigen::RowVectorXd> disp_eig(disp.ptr<double>(), disp.rows*disp.cols);
   // All the invalid zeros will now be infs due to inversion
-  return img_plane_pts_.rowwise() * (baseline * K_(0, 0) / disp_eig.array());
+  return std::make_shared<Eigen::Array3Xd>(
+      img_plane_pts_.rowwise() * (baseline * K_(0, 0) / disp_eig.array()));
 }

@@ -82,8 +82,8 @@ TEST(ASOOM_dense_stereo_test, test_stereo) {
   );
   stereo.setIntrinsics(rect.getOutputK(), rect.getOutputSize());
 
-  Eigen::Array3Xd depth_pc = stereo.projectDepth(disp, 
+  std::shared_ptr<Eigen::Array3Xd> depth_pc = stereo.projectDepth(disp, 
       (pose1.translation() - pose2.translation()).norm());
-  EXPECT_FLOAT_EQ(depth_pc(2, disp.size().height*disp.size().width/2 + disp.size().width/2), 
+  EXPECT_FLOAT_EQ((*depth_pc)(2, disp.size().height*disp.size().width/2 + disp.size().width/2), 
       depth_center);
 }

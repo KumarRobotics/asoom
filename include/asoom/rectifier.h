@@ -72,6 +72,10 @@ class Rectifier {
       return output_size_;
     }
 
+    bool haveCalib() const {
+      return !output_K_.empty();
+    }
+
   private:
     //! Intrinsics and dist coeff for input camera
     cv::Mat input_K_, input_dist_;

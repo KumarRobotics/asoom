@@ -1,4 +1,6 @@
 #include <gtest/gtest.h>
+#include <ros/package.h>
+#include <opencv2/imgcodecs/imgcodecs.hpp>
 #include "asoom/asoom.h"
 
 TEST(ASOOM_asoom_test, test_pgo_thread) {
@@ -69,4 +71,46 @@ TEST(ASOOM_asoom_test, test_pgo_gps_thread) {
 }
 
 TEST(ASOOM_asoom_test, test_stereo_thread) {
+  ASOOM a(ASOOM::Params(100, 100, 0.1), PoseGraph::Params(0.1, 0.1, 0.1, 0, true),
+    Rectifier::Params(ros::package::getPath("asoom") + "/config/grace_quarters.yaml", 0.5), 
+    DenseStereo::Params());
+
+  cv::Mat im1 = cv::imread(ros::package::getPath("asoom") + 
+                           "/test/test_imgs/1635642164881558848.jpg");
+  Eigen::Isometry3d pose1 = Eigen::Isometry3d::Identity();
+  pose1.translate(Eigen::Vector3d(
+       -33.9279,
+        30.7013,
+        6.56765));
+  pose1.rotate(Eigen::Quaterniond(
+        0.0176213,
+       -0.462416,
+        0.886253,
+       -0.0204316)); //wxyz
+  a.addFrame(0, im1, pose1);
+  
+  cv::Mat im2 = cv::imread(ros::package::getPath("asoom") + 
+                           "/test/test_imgs/1635642165797544512.jpg");
+  Eigen::Isometry3d pose2 = Eigen::Isometry3d::Identity();
+  pose2.translate(Eigen::Vector3d(
+       -34.7402,
+        31.3199,
+        6.54712));
+  pose2.rotate(Eigen::Quaterniond(
+        0.0761593,
+       -0.670737,
+        0.731146,
+        0.0986779)); //wxyz
+  a.addFrame(100, im2, pose2);
+
+  // Wait long enough that stereo has completed
+  std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+  Eigen::Array4Xf pc = a.getDepthCloud(0);
+  EXPECT_EQ(pc.rows(), 4);
+  EXPECT_EQ(pc.cols(), 0);
+
+  pc = a.getDepthCloud(100);
+  EXPECT_EQ(pc.rows(), 4);
+  EXPECT_TRUE(pc.cols() > 10000);
 }
