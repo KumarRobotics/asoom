@@ -218,7 +218,7 @@ std::vector<Keyframe> ASOOM::StereoThread::getKeyframesToCompute() {
 
 void ASOOM::StereoThread::computeDepths(std::vector<Keyframe>& frames) {
   // Use c ptr because we don't want the pointer to try to manage the underlying memory
-  Keyframe *last_frame = nullptr;
+  const Keyframe *last_frame = nullptr;
   cv::Mat i1m1, i1m2, i2m1, i2m2, rect1, rect2, disp;
   for (auto& frame : frames) {
     if (last_frame != nullptr) {

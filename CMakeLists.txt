@@ -22,6 +22,9 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   visualization_msgs
   tf2_ros
+  grid_map_core
+  grid_map_ros
+  grid_map_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -139,6 +142,7 @@ add_library(${PROJECT_NAME}
   src/pose_graph.cpp
   src/rectifier.cpp
   src/dense_stereo.cpp
+  src/map.cpp
 )
 
 ## Add cmake target dependencies of the library
@@ -154,6 +158,7 @@ target_link_libraries(${PROJECT_NAME}
   Eigen3::Eigen
   ${OpenCV_LIBS}
   yaml-cpp
+  ${catkin_LIBRARIES}
 )
 
 ## Declare a C++ executable
