@@ -11,6 +11,8 @@ class Map {
   public: 
     struct Config {
       double resolution; // In m/cell
+
+      Config(double r) : resolution(r) {}
     };
 
     Map(const Config& config);
@@ -18,9 +20,10 @@ class Map {
     /*!
      * Add a new pointcloud to the map.
      *
-     * @cloud Pointcloud to add, should already be in the world frame
+     * @param cloud Pointcloud to add, should already be in the world frame
+     * @param camera_pose Camera pose from which cloud projected.
      */
-    void addCloud(const Eigen::Array4Xf& cloud);
+    void addCloud(const Eigen::Array4Xf& cloud, const Eigen::Isometry3d& camera_pose);
 
     /*!
      * Reset all map layers
@@ -28,6 +31,9 @@ class Map {
     void clear();
 
     grid_map_msgs::GridMap exportROSMsg();
+
+    //! This is really just for test purposes
+    const grid_map::GridMap &getMap() const;
 
   private:
     grid_map::GridMap map_;

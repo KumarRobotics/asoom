@@ -6,7 +6,7 @@ Eigen::Array4Xf Keyframe::getDepthCloud() const {
     return Eigen::Array4Xf::Zero(4, 0);
   }
 
-  // xyz, transformed to global frame
+  // transform to global frame
   Eigen::Isometry3d trans = getRectPose();
 
   Eigen::Array4Xf cloud(4, depth_->cols());
