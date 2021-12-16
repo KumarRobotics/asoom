@@ -5,9 +5,11 @@
 #include "asoom/asoom.h"
 
 ASOOM::ASOOM(const Params& asoom_params, const PoseGraph::Params& pg_params,
-    const Rectifier::Params& rect_params, const DenseStereo::Params& stereo_params) 
+    const Rectifier::Params& rect_params, const DenseStereo::Params& stereo_params,
+    const Map::Params& map_params) 
   : pose_graph_thread_(PoseGraphThread(this, pg_params)),
     stereo_thread_(StereoThread(this, rect_params, stereo_params)),
+    map_thread_(MapThread(this, map_params)),
     params_(asoom_params) {}
 
 ASOOM::~ASOOM() {
@@ -15,6 +17,7 @@ ASOOM::~ASOOM() {
   exit_threads_flag_ = true;
   pose_graph_thread_.join();
   stereo_thread_.join();
+  map_thread_.join();
 }
 
 void ASOOM::addFrame(long stamp, cv::Mat& img, const Eigen::Isometry3d& pose) {
@@ -245,4 +248,22 @@ void ASOOM::StereoThread::updateKeyframes(const std::vector<Keyframe>& frames) {
       asoom_->keyframes_.frames.at(frame.getStamp())->setDepth(frame);
     }
   }
+}
+
+/***********************************************************
+ * Map Thread
+ ***********************************************************/
+
+bool ASOOM::MapThread::operator()() {
+  using namespace std::chrono;
+  auto next = steady_clock::now();
+  while (!asoom_->exit_threads_flag_) {
+    std::cout << "\033[35m" << "[Map] ========== Map Thread =========" << std::endl << 
+      "\033[0m" << std::flush;
+
+    next += milliseconds(asoom_->params_.map_thread_period_ms);
+    std::this_thread::sleep_until(next);
+  }
+  std::cout << "\033[35m" << "[Map] Map Thread Exited" << "\033[0m" << std::endl;
+  return true;
 }

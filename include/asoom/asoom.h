@@ -7,6 +7,7 @@
 #include "asoom/rectifier.h"
 #include "asoom/dense_stereo.h"
 #include "asoom/keyframe.h"
+#include "asoom/map.h"
 
 /*!
  * Manager class for system
@@ -19,13 +20,14 @@ class ASOOM {
       //! Periods for threads to run at in ms
       int pgo_thread_period_ms;
       int stereo_thread_period_ms;
+      int map_thread_period_ms;
 
       //! Distance threshold for creating new keyframe in meters
       float keyframe_dist_thresh_m;
 
-      Params(int ptpm = 1000, int stpm = 1000, float kdtm = 5) :
+      Params(int ptpm = 1000, int stpm = 1000, int mtps = 1000, float kdtm = 5) :
         pgo_thread_period_ms(ptpm), stereo_thread_period_ms(stpm), 
-        keyframe_dist_thresh_m(kdtm) {}
+        map_thread_period_ms(mtps), keyframe_dist_thresh_m(kdtm) {}
     };
 
     /*!
@@ -33,9 +35,11 @@ class ASOOM {
      * @param pg_params Params forwarded to PoseGraph
      * @param rect_params Params forwarded to Rectifier
      * @param stereo_params Params forwarded to DenseStereo
+     * @param map_params Params forwarded to Map
      */
     ASOOM(const Params& asoom_params, const PoseGraph::Params& pg_params,
-      const Rectifier::Params& rect_params, const DenseStereo::Params& stereo_params);
+      const Rectifier::Params& rect_params, const DenseStereo::Params& stereo_params,
+      const Map::Params& map_params);
     ~ASOOM();
 
     /*!
@@ -172,6 +176,20 @@ class ASOOM {
         Rectifier rectifier_;
 
         DenseStereo dense_stereo_;
+
+        //! Pointer back to parent
+        ASOOM * const asoom_;
+    };
+
+    //! Thread managing map building
+    std::thread map_thread_;
+    class MapThread {
+      public:
+        MapThread(ASOOM *a, const Map::Params& p) : asoom_(a), map_(p) {}
+
+        bool operator()();
+      private:
+        Map map_;
 
         //! Pointer back to parent
         ASOOM * const asoom_;

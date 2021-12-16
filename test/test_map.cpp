@@ -2,7 +2,7 @@
 #include "asoom/map.h"
 
 TEST(ASOOM_map_test, test_map) {
-  Map map(Map::Config(0.1));
+  Map map(Map::Params(0.1));
 
   // Check initialization
   EXPECT_FLOAT_EQ(map.getMap().atPosition("view_angle", grid_map::Position(0, 0)), M_PI/2);

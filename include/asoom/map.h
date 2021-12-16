@@ -9,13 +9,15 @@
  */
 class Map {
   public: 
-    struct Config {
+    struct Params {
       double resolution; // In m/cell
 
-      Config(double r) : resolution(r) {}
+      Params(double r) : resolution(r) {}
+
+      Params() : Params(0.1) {}
     };
 
-    Map(const Config& config);
+    Map(const Params& params);
 
     /*!
      * Add a new pointcloud to the map.

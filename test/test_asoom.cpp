@@ -4,8 +4,8 @@
 #include "asoom/asoom.h"
 
 TEST(ASOOM_asoom_test, test_pgo_thread) {
-  ASOOM a(ASOOM::Params(100, 100, 1.5), PoseGraph::Params(0.1, 0.1, 0.1, 0, true),
-      Rectifier::Params(), DenseStereo::Params());
+  ASOOM a(ASOOM::Params(100, 100, 100, 1.5), PoseGraph::Params(0.1, 0.1, 0.1, 0, true),
+      Rectifier::Params(), DenseStereo::Params(), Map::Params());
 
   // Sanity check
   EXPECT_EQ(a.getGraph().size(), 0);
@@ -34,8 +34,8 @@ TEST(ASOOM_asoom_test, test_pgo_thread) {
 }
 
 TEST(ASOOM_asoom_test, test_pgo_gps_thread) {
-  ASOOM a(ASOOM::Params(100, 100, 0), PoseGraph::Params(0.1, 0.1, 0.1, 0, false, 2),
-      Rectifier::Params(), DenseStereo::Params());
+  ASOOM a(ASOOM::Params(100, 100, 100, 0), PoseGraph::Params(0.1, 0.1, 0.1, 0, false, 2),
+      Rectifier::Params(), DenseStereo::Params(), Map::Params());
 
   // Sanity check
   EXPECT_EQ(a.getGraph().size(), 0);
@@ -71,9 +71,9 @@ TEST(ASOOM_asoom_test, test_pgo_gps_thread) {
 }
 
 TEST(ASOOM_asoom_test, test_stereo_thread) {
-  ASOOM a(ASOOM::Params(100, 100, 0.1), PoseGraph::Params(0.1, 0.1, 0.1, 0, true),
+  ASOOM a(ASOOM::Params(100, 100, 100, 0.1), PoseGraph::Params(0.1, 0.1, 0.1, 0, true),
     Rectifier::Params(ros::package::getPath("asoom") + "/config/grace_quarters.yaml", 0.5), 
-    DenseStereo::Params());
+    DenseStereo::Params(), Map::Params());
 
   cv::Mat im1 = cv::imread(ros::package::getPath("asoom") + 
                            "/test/test_imgs/1635642164881558848.jpg");

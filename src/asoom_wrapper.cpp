@@ -21,6 +21,7 @@ ASOOMWrapper::ASOOMWrapper(ros::NodeHandle& nh)
   ASOOM::Params asoom_params;
   nh_.param<int>("pgo_thread_period_ms", asoom_params.pgo_thread_period_ms, 1000);
   nh_.param<int>("stereo_thread_period_ms", asoom_params.stereo_thread_period_ms, 1000);
+  nh_.param<int>("map_thread_period_ms", asoom_params.map_thread_period_ms, 1000);
   nh_.param<float>("keyframe_dist_thresh_m", asoom_params.keyframe_dist_thresh_m, 1);
 
   // Parameters for PGO
@@ -35,7 +36,7 @@ ASOOMWrapper::ASOOMWrapper(ros::NodeHandle& nh)
   nh_.param<int>("pose_graph_num_frames_init", pg_nfi, 5);
   PoseGraph::Params pose_graph_params(pg_bs_p, pg_bs_r, pg_gs, pg_gsps, pg_fs, pg_nfi);
 
-  //Parameters for Rectifier
+  // Parameters for Rectifier
   std::string r_calib_path;
   float r_scale;
   if (require_imgs_) {
@@ -59,9 +60,15 @@ ASOOMWrapper::ASOOMWrapper(ros::NodeHandle& nh)
   nh_.param<int>("stereo_speckle_window_size", stereo_params.speckle_window_size, 100);
   nh_.param<int>("stereo_speckle_range", stereo_params.speckle_range, 20);
 
+  // Parameters for Map
+  Map::Params map_params;
+  nh_.param<double>("map_resolution", map_params.resolution, 0.5);
+
   std::cout << "\033[32m" << "[ROS] ======== Configuration ========" << std::endl <<
     "[ROS] require_imgs: " << require_imgs_ << std::endl <<
     "[ROS] pgo_thread_period_ms: " << asoom_params.pgo_thread_period_ms << std::endl <<
+    "[ROS] stereo_thread_period_ms: " << asoom_params.stereo_thread_period_ms << std::endl <<
+    "[ROS] map_thread_period_ms: " << asoom_params.map_thread_period_ms << std::endl <<
     "[ROS] keyframe_dist_thresh_m: " << asoom_params.keyframe_dist_thresh_m << std::endl <<
     "[ROS] ===============================" << std::endl <<
     "[ROS] pose_graph_between_sigmas_pos: " << pg_bs_p << std::endl <<
@@ -84,10 +91,12 @@ ASOOMWrapper::ASOOMWrapper(ros::NodeHandle& nh)
     "[ROS] stereo_uniqueness_ratio:" << stereo_params.uniqueness_ratio << std::endl << 
     "[ROS] stereo_speckle_window_size: " << stereo_params.speckle_window_size << std::endl << 
     "[ROS] stereo_speckle_range: " << stereo_params.speckle_range << std::endl << 
+    "[ROS] ===============================" << std::endl <<
+    "[ROS] map_resolution: " << map_params.resolution << std::endl << 
     "[ROS] ====== End Configuration ======" << "\033[0m" << std::endl;
 
   asoom_ = std::make_unique<ASOOM>(asoom_params, pose_graph_params, rectifier_params, 
-      stereo_params);
+      stereo_params, map_params);
 }
 
 void ASOOMWrapper::initialize() {

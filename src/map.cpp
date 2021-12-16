@@ -1,6 +1,6 @@
 #include "asoom/map.h"
 
-Map::Map(const Config& config) {
+Map::Map(const Params& params) {
   map_ = grid_map::GridMap({
       "elevation", 
       "color", 
@@ -9,13 +9,13 @@ Map::Map(const Config& config) {
       "num_points"});
   // Reset layers to the appropriate values
   map_.setFrameId("world");
-  map_.setGeometry(grid_map::Length(50, 50), config.resolution, grid_map::Position(0, 0));
+  map_.setGeometry(grid_map::Length(50, 50), params.resolution, grid_map::Position(0, 0));
   clear();
 }
 
 void Map::addCloud(const Eigen::Array4Xf& cloud, const Eigen::Isometry3d& camera_pose) {
   grid_map::Position corner_pos;
-  map_.getPosition(grid_map::Index(0,0), corner_pos);
+  map_.getPosition(grid_map::Index(0, 0), corner_pos);
   // This is the array with the indices each point falls into
   Eigen::Array2Xi inds = (((-cloud).topRows<2>().colwise() + 
       corner_pos.array().cast<float>()) / map_.getResolution()).round().cast<int>();
