@@ -72,7 +72,7 @@ class ASOOMWrapper {
     std::unique_ptr<message_filters::TimeSynchronizer<geometry_msgs::PoseStamped, 
       sensor_msgs::Image>> pose_img_sync_sub_;
     ros::Subscriber gps_sub_, pose_sub_;
-    ros::Publisher trajectory_viz_pub_, recent_cloud_pub_;
+    ros::Publisher trajectory_viz_pub_, recent_cloud_pub_, map_pub_;
 
     //! Timer to loop and publish visualizations and the map
     ros::Timer output_timer_;

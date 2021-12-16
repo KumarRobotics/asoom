@@ -38,3 +38,12 @@ Eigen::Array4Xf Keyframe::getDepthCloud() const {
   cloud.conservativeResize(Eigen::NoChange_t(), sparse_ind);
   return cloud;
 }
+
+bool Keyframe::needsMapUpdate() const {
+  Eigen::Isometry3d diff = pose_.inverse() * map_pose_;
+  if (diff.translation().norm() > 1 || 
+      Eigen::AngleAxisd(diff.rotation()).angle() > 5*M_PI/180) {
+    return true;
+  }
+  return false;
+}

@@ -1,6 +1,6 @@
 #include "asoom/map.h"
 
-Map::Map(const Params& params) {
+Map::Map(const Params& params) : params_(params) {
   map_ = grid_map::GridMap({
       "elevation", 
       "color", 
@@ -9,11 +9,18 @@ Map::Map(const Params& params) {
       "num_points"});
   // Reset layers to the appropriate values
   map_.setFrameId("world");
-  map_.setGeometry(grid_map::Length(50, 50), params.resolution, grid_map::Position(0, 0));
+  // Init with buffer on all sides of (0, 0)
+  map_.setGeometry(grid_map::Length(params_.buffer_size_m, params_.buffer_size_m)*2, 
+      params_.resolution, grid_map::Position(0, 0));
   clear();
 }
 
-void Map::addCloud(const Eigen::Array4Xf& cloud, const Eigen::Isometry3d& camera_pose) {
+void Map::addCloud(const Eigen::Array4Xf& cloud, const Eigen::Isometry3d& camera_pose, 
+    long stamp) 
+{
+  if (stamp > most_recent_stamp_) {
+    most_recent_stamp_ = stamp;
+  }
   grid_map::Position corner_pos;
   map_.getPosition(grid_map::Index(0, 0), corner_pos);
   // This is the array with the indices each point falls into
@@ -39,8 +46,12 @@ void Map::addCloud(const Eigen::Array4Xf& cloud, const Eigen::Isometry3d& camera
       continue;
     }
     // Cumulative mean
-    elevation_layer(ind[0], ind[1]) += (cloud(2, col) - elevation_layer(ind[0], ind[1])) / 
-      (num_points_layer(ind[0], ind[1]) + 1);
+    if (std::isnan(elevation_layer(ind[0], ind[1]))) {
+      elevation_layer(ind[0], ind[1]) = cloud(2, col);
+    } else {
+      elevation_layer(ind[0], ind[1]) += (cloud(2, col) - elevation_layer(ind[0], ind[1])) / 
+        (num_points_layer(ind[0], ind[1]) + 1);
+    }
     num_points_layer(ind[0], ind[1])++;
 
     // Use color from closest to image center
@@ -54,15 +65,32 @@ void Map::addCloud(const Eigen::Array4Xf& cloud, const Eigen::Isometry3d& camera
 }
 
 void Map::clear() {
-  map_.setConstant("elevation", 0);
+  most_recent_stamp_ = 0;
+  map_.setConstant("elevation", NAN);
   map_.setConstant("color", NAN);
   map_.setConstant("semantics", NAN);
   map_.setConstant("view_angle", M_PI/2);
   map_.setConstant("num_points", 0);
 }
 
+void Map::resizeToBounds(const Eigen::Vector2d& min, const Eigen::Vector2d& max) {
+  grid_map::Position center_pos = map_.getPosition();
+  grid_map::Length size = map_.getLength();
+
+  grid_map::Length diff = center_pos.array() - size/2 - min.array() + params_.buffer_size_m;
+  if ((diff > 0).any()) {
+    map_.grow(size + diff.cwiseMax(0), grid_map::GridMap::SW);
+  }
+
+  diff = -center_pos.array() - size/2 + max.array() + params_.buffer_size_m;
+  if ((diff > 0).any()) {
+    map_.grow(size + diff.cwiseMax(0), grid_map::GridMap::NE);
+  }
+}
+
 grid_map_msgs::GridMap Map::exportROSMsg() {
   grid_map_msgs::GridMap msg;
+  map_.setTimestamp(most_recent_stamp_);
   grid_map::GridMapRosConverter::toMessage(map_, msg);
   return msg;
 }

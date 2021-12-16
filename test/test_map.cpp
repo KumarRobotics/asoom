@@ -2,7 +2,7 @@
 #include "asoom/map.h"
 
 TEST(ASOOM_map_test, test_map) {
-  Map map(Map::Params(0.1));
+  Map map(Map::Params(0.1, 25));
 
   // Check initialization
   EXPECT_FLOAT_EQ(map.getMap().atPosition("view_angle", grid_map::Position(0, 0)), M_PI/2);
@@ -20,7 +20,7 @@ TEST(ASOOM_map_test, test_map) {
   grid_map::Position pos2(5.05, 0.05);
   cloud.col(0) << pos1.cast<float>(), 1, 1;
   cloud.col(1) << pos2.cast<float>(), 2, 2;
-  map.addCloud(cloud, Eigen::Isometry3d::Identity());
+  map.addCloud(cloud, Eigen::Isometry3d::Identity(), 0);
   EXPECT_FLOAT_EQ(map.getMap().atPosition("elevation", pos1), 1);
   EXPECT_EQ(map.getMap().atPosition("num_points", pos1), 1);
   EXPECT_FLOAT_EQ(map.getMap().atPosition("elevation", pos2), 2);
@@ -31,7 +31,7 @@ TEST(ASOOM_map_test, test_map) {
   pos2 = grid_map::Position(5.01, 0.09);
   cloud.col(0) << pos1.cast<float>(), 1, 2;
   cloud.col(1) << pos2.cast<float>(), 3, 3;
-  map.addCloud(cloud, Eigen::Isometry3d::Identity());
+  map.addCloud(cloud, Eigen::Isometry3d::Identity(), 0);
   EXPECT_FLOAT_EQ(map.getMap().atPosition("elevation", pos1), 1);
   EXPECT_EQ(map.getMap().atPosition("num_points", pos1), 2);
   EXPECT_FLOAT_EQ(map.getMap().atPosition("elevation", pos2), 2.5);
@@ -40,6 +40,6 @@ TEST(ASOOM_map_test, test_map) {
 
   pos1 = grid_map::Position(0.0, 0.0);
   cloud.col(0) << pos1.cast<float>(), 1, 2;
-  map.addCloud(cloud, Eigen::Isometry3d::Identity());
+  map.addCloud(cloud, Eigen::Isometry3d::Identity(), 0);
   EXPECT_EQ(map.getMap().atPosition("color", pos1), 2);
 }

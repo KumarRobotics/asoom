@@ -83,6 +83,9 @@ class ASOOM {
      */
     long getMostRecentStampWithDepth();
 
+    //! Get the last grid map
+    grid_map_msgs::GridMap getMapMessage();
+
   private:
     /***********************************************************
      * LOCAL VARIABLES
@@ -118,6 +121,12 @@ class ASOOM {
       std::shared_mutex m;
       Keyframes frames;
     } keyframes_;
+
+    //! ROS Message of the current map
+    struct MapMessage {
+      std::mutex m;
+      grid_map_msgs::GridMap msg;
+    } grid_map_msg_;
 
     //! Set to true to kill all running threads
     std::atomic<bool> exit_threads_flag_ = false;
@@ -189,6 +198,12 @@ class ASOOM {
 
         bool operator()();
       private:
+        std::vector<Keyframe> getKeyframesToCompute();
+
+        void resizeMap(std::vector<Keyframe>& frames);
+
+        void updateMap(std::vector<Keyframe>& frames);
+
         Map map_;
 
         //! Pointer back to parent

@@ -37,10 +37,7 @@ class Keyframe {
     }
 
     inline bool hasDepth() const {
-      if (depth_) {
-        return true;
-      }
-      return false;
+      return have_depth_;
     }
 
     inline void setPose(const Eigen::Isometry3d& p) {
@@ -52,15 +49,26 @@ class Keyframe {
       rect_dpose_ = dp;
       rect_img_ = rect_img;
       depth_ = depth;
+      if (depth_) {
+        have_depth_ = true;
+      }
     }
 
     inline void setDepth(const Keyframe& key) {
-      rect_dpose_ = key.rect_dpose_;
-      rect_img_ = key.rect_img_;
-      depth_ = key.depth_;
+      setDepth(key.rect_dpose_, key.rect_img_, key.depth_);
     }
 
     Eigen::Array4Xf getDepthCloud() const;
+
+    bool needsMapUpdate() const;
+
+    inline bool inMap() const {
+      return !map_pose_.matrix().isIdentity(1e-5);
+    }
+
+    inline void updateMapPose() {
+      map_pose_ = pose_;
+    }
 
   private:
     /***********************************************************
@@ -73,6 +81,12 @@ class Keyframe {
     //! Current global pose estimation
     Eigen::Isometry3d pose_;
 
+    /*! 
+     * The pose used by the mapper.  If pose_ changes from this significantly, we
+     * want to trigger a map rebuild
+     */
+    Eigen::Isometry3d map_pose_{Eigen::Isometry3d::Identity()};
+
     //! Corrective rotation for rectification
     Eigen::Isometry3d rect_dpose_{Eigen::Isometry3d::Identity()};
 
@@ -84,6 +98,7 @@ class Keyframe {
     const cv::Mat img_;
     cv::Mat rect_img_;
 
+    bool have_depth_ = false;
     //! Depth cloud associated with keyframe for the same image, stored row-major
     std::shared_ptr<Eigen::Array3Xd> depth_;
 };

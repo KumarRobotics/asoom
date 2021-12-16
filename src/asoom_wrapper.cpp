@@ -63,6 +63,7 @@ ASOOMWrapper::ASOOMWrapper(ros::NodeHandle& nh)
   // Parameters for Map
   Map::Params map_params;
   nh_.param<double>("map_resolution", map_params.resolution, 0.5);
+  nh_.param<double>("map_buffer_size_m", map_params.buffer_size_m, 50);
 
   std::cout << "\033[32m" << "[ROS] ======== Configuration ========" << std::endl <<
     "[ROS] require_imgs: " << require_imgs_ << std::endl <<
@@ -93,6 +94,7 @@ ASOOMWrapper::ASOOMWrapper(ros::NodeHandle& nh)
     "[ROS] stereo_speckle_range: " << stereo_params.speckle_range << std::endl << 
     "[ROS] ===============================" << std::endl <<
     "[ROS] map_resolution: " << map_params.resolution << std::endl << 
+    "[ROS] map_buffer_size_m: " << map_params.buffer_size_m << std::endl << 
     "[ROS] ====== End Configuration ======" << "\033[0m" << std::endl;
 
   asoom_ = std::make_unique<ASOOM>(asoom_params, pose_graph_params, rectifier_params, 
@@ -117,6 +119,7 @@ void ASOOMWrapper::initialize() {
 
   trajectory_viz_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("viz", 1);
   recent_cloud_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("recent_cloud", 1);
+  map_pub_ = nh_.advertise<grid_map_msgs::GridMap>("map", 1);
 
   output_timer_ = nh_.createTimer(ros::Duration(1.0), &ASOOMWrapper::outputCallback, this);
 }
@@ -152,6 +155,7 @@ void ASOOMWrapper::outputCallback(const ros::TimerEvent& event) {
   publishPoseGraphViz(time);
   publishRecentPointCloud(time);
   publishUTMTransform(time);
+  map_pub_.publish(asoom_->getMapMessage());
   auto end_t = high_resolution_clock::now();
 
   std::cout << "\033[32m" << "[ROS] Output Visualization: " <<

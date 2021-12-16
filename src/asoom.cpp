@@ -68,6 +68,12 @@ long ASOOM::getMostRecentStampWithDepth() {
   return -1;
 }
 
+grid_map_msgs::GridMap ASOOM::getMapMessage() {
+  std::scoped_lock<std::mutex> lock(grid_map_msg_.m);
+  // Force making a copy for thread safety reasons
+  return grid_map_msgs::GridMap(grid_map_msg_.msg);
+}
+
 /***********************************************************
  * PoseGraph Thread
  ***********************************************************/
@@ -235,7 +241,10 @@ void ASOOM::StereoThread::computeDepths(std::vector<Keyframe>& frames) {
 
       double baseline = 
         (frame.getPose().translation() - last_frame->getPose().translation()).norm();
-      frame.setDepth(new_dposes.first, rect1, dense_stereo_.projectDepth(disp, baseline));
+      // Important to clone rectified image here, since otherwise on the next image when we
+      // update rect1 it will change, since a Mat is a pointer internally
+      frame.setDepth(new_dposes.first, rect1.clone(), 
+          dense_stereo_.projectDepth(disp, baseline));
     }
     last_frame = &frame;
   }
@@ -258,7 +267,29 @@ bool ASOOM::MapThread::operator()() {
   using namespace std::chrono;
   auto next = steady_clock::now();
   while (!asoom_->exit_threads_flag_) {
+    auto start_t = high_resolution_clock::now();
+    auto keyframes_to_compute = getKeyframesToCompute();
+    auto buffer_keyframes_t = high_resolution_clock::now();
+    resizeMap(keyframes_to_compute);
+    auto resize_map_t = high_resolution_clock::now();
+    updateMap(keyframes_to_compute);
+    auto update_map_t = high_resolution_clock::now();
+    if (keyframes_to_compute.size() > 0) {
+      std::scoped_lock<std::mutex> lock(asoom_->grid_map_msg_.m);
+      asoom_->grid_map_msg_.msg = map_.exportROSMsg();
+    }
+    auto export_ros_t = high_resolution_clock::now();
+    
     std::cout << "\033[35m" << "[Map] ========== Map Thread =========" << std::endl << 
+      "[StT] Buffering Keyframes: " << 
+      duration_cast<microseconds>(buffer_keyframes_t - start_t).count() << "us" << std::endl <<
+      "[StT] Resizing Map: " << 
+      duration_cast<microseconds>(resize_map_t - buffer_keyframes_t).count() << "us" << std::endl <<
+      "[StT] Updating Map: " << 
+      duration_cast<microseconds>(update_map_t - resize_map_t).count() << "us" << std::endl <<
+      "[StT] Exporting ROS Message: " << 
+      duration_cast<microseconds>(export_ros_t - update_map_t).count() << "us" << std::endl <<
+      "[StT] Total Keyframes Updated: " << keyframes_to_compute.size() << std::endl <<
       "\033[0m" << std::flush;
 
     next += milliseconds(asoom_->params_.map_thread_period_ms);
@@ -266,4 +297,63 @@ bool ASOOM::MapThread::operator()() {
   }
   std::cout << "\033[35m" << "[Map] Map Thread Exited" << "\033[0m" << std::endl;
   return true;
+}
+
+std::vector<Keyframe> ASOOM::MapThread::getKeyframesToCompute() {
+  // Shared lock because we are updating map pose in keyframe, but we only ever do
+  // that in this thread, so still safe to be "read-only"
+  std::shared_lock lock(asoom_->keyframes_.m);
+
+  std::vector<Keyframe> keyframes_to_compute;
+  bool rebuild_map = false;
+  for (const auto& frame : asoom_->keyframes_.frames) {
+    if (frame.second->needsMapUpdate() && frame.second->hasDepth()) {
+      if (frame.second->inMap()) {
+        // If frame already in map but needs updating, we have to wipe and start over
+        rebuild_map = true;
+        break;
+      }
+      frame.second->updateMapPose();
+
+      // When we do this we call Keyframe's copy constructor
+      // Notably the image copies (cv::Mat) are not deep.  Makes this more efficient,
+      // but need to be careful for thread safety
+      keyframes_to_compute.push_back(*frame.second);
+    }
+  }
+
+  if (rebuild_map) {
+    std::cout << "\033[35m" << "[Map] Triggering full map rebuild" << "\033[0m" << std::endl;
+    keyframes_to_compute.clear();
+    map_.clear();
+
+    // Add all frames
+    for (const auto& frame : asoom_->keyframes_.frames) {
+      if (frame.second->hasDepth()) {
+        frame.second->updateMapPose();
+        keyframes_to_compute.push_back(*frame.second);
+      }
+    }
+  }
+
+  return keyframes_to_compute;
+}
+
+void ASOOM::MapThread::resizeMap(std::vector<Keyframe>& frames) {
+  Eigen::Vector2d min = Eigen::Vector2d::Constant(std::numeric_limits<double>::max());
+  Eigen::Vector2d max = Eigen::Vector2d::Constant(std::numeric_limits<double>::lowest());
+  for (auto& frame : frames) {
+    Eigen::Vector3d loc = frame.getPose().translation();
+    min = min.cwiseMin(loc.head<2>());
+    max = max.cwiseMax(loc.head<2>());
+  }
+  if (frames.size() > 0) {
+    map_.resizeToBounds(min, max);
+  }
+}
+
+void ASOOM::MapThread::updateMap(std::vector<Keyframe>& frames) {
+  for (auto& frame : frames) {
+    map_.addCloud(frame.getDepthCloud(), frame.getPose(), frame.getStamp());
+  }
 }
