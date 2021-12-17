@@ -25,6 +25,22 @@ TEST(ASOOM_rectifier_test, test_init) {
   EXPECT_TRUE(K(1, 2) > 100);
 }
 
+TEST(ASOOM_rectifier_test, test_fisheye_init) {
+  Rectifier rect(Rectifier::Params(ros::package::getPath("asoom") + "/config/aerial_pennov.yaml", 1));
+  Eigen::Matrix3d K = rect.getOutputK();
+
+  // Sanity check the matrix
+  EXPECT_FLOAT_EQ(K(1, 0), 0);
+  EXPECT_FLOAT_EQ(K(0, 1), 0);
+  EXPECT_FLOAT_EQ(K(2, 0), 0);
+  EXPECT_FLOAT_EQ(K(2, 1), 0);
+  EXPECT_FLOAT_EQ(K(2, 2), 1);
+  EXPECT_TRUE(K(0, 0) > 100);
+  EXPECT_TRUE(K(1, 1) > 100);
+  EXPECT_TRUE(K(0, 2) > 100);
+  EXPECT_TRUE(K(1, 2) > 100);
+}
+
 TEST(ASOOM_rectifier_test, test_rect) {
   /*
   2 Keyframes:

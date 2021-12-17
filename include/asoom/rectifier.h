@@ -81,6 +81,9 @@ class Rectifier {
     cv::Mat input_K_, input_dist_;
     cv::Size input_size_;
 
+    //! Flag for equidistant/fisheye model
+    bool is_fisheye_;
+
     //! Intrinsics for rectified images
     cv::Mat output_K_;
     cv::Size output_size_;
