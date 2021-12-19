@@ -30,7 +30,7 @@ TEST(ASOOM_asoom_test, test_pgo_thread) {
   // We don't expect the middle point, since didn't move enough
   ASSERT_EQ(poses.size(), 2);
   EXPECT_FLOAT_EQ(poses[0].translation()[0], 0);
-  EXPECT_FLOAT_EQ(poses[1].translation()[0], 2);
+  EXPECT_FLOAT_EQ(poses[1].translation()[0], -2);
 }
 
 TEST(ASOOM_asoom_test, test_pgo_gps_thread) {

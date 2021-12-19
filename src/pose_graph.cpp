@@ -32,9 +32,12 @@ size_t PoseGraph::addFrame(long stamp, const Eigen::Isometry3d& pose,
     current_opt_.insert(P(size_), Eigen2GTSAM(most_recent_pose_opt * diff));
   } else {
     // Create prior on first pose to remove free degree of freedom until GPS installed
+    // Start downward-facing
+    Eigen::Isometry3d init_pose = Eigen::Isometry3d::Identity();
+    init_pose.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitY()));
     initial_pose_factor_id_ = graph_.size();
     graph_.emplace_shared<gtsam::PriorFactor<gtsam::Pose3>>(P(size_), 
-        Eigen2GTSAM(Eigen::Isometry3d::Identity()),
+        Eigen2GTSAM(init_pose),
         gtsam::noiseModel::Constrained::All(6));
     current_opt_.insert(P(size_), Eigen2GTSAM(Eigen::Isometry3d::Identity()));
   }

@@ -19,13 +19,14 @@ TEST(ASOOM_pose_graph_test, test_two_nodes) {
   EXPECT_FLOAT_EQ(pg->getPoseAtIndex(0).translation()[0], 0);
   EXPECT_FLOAT_EQ(pg->getPoseAtIndex(1).translation()[0], 1);
   pg->update();
+  // We rotate around y for init without gps, so x gets flipped
   EXPECT_FLOAT_EQ(pg->getPoseAtIndex(0).translation()[0], 0);
-  EXPECT_FLOAT_EQ(pg->getPoseAtIndex(1).translation()[0], 1);
+  EXPECT_FLOAT_EQ(pg->getPoseAtIndex(1).translation()[0], -1);
 
   // Test Time getter
   EXPECT_FALSE(pg->getPoseAtTime(100));
   EXPECT_TRUE(pg->getPoseAtTime(10));
-  EXPECT_FLOAT_EQ(pg->getPoseAtTime(20)->translation()[0], 1);
+  EXPECT_FLOAT_EQ(pg->getPoseAtTime(20)->translation()[0], -1);
 
   EXPECT_FLOAT_EQ(pg->getScale(), 1);
   EXPECT_NEAR(pg->getError(), 0, 0.00001);

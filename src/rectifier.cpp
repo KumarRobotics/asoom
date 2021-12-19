@@ -69,8 +69,8 @@ std::pair<Eigen::Isometry3d, Eigen::Isometry3d> Rectifier::genRectifyMaps(
   R.row(1) = (R1.row(2).cross(R.row(0))).normalized();
   R.row(2) = (R.row(0).cross(R.row(1))).normalized();
 
-  Eigen::Matrix3d R1diff = R1.inverse() * R;
-  Eigen::Matrix3d R2diff = R2.inverse() * R;
+  Eigen::Matrix3d R1diff = (R * R1).inverse();
+  Eigen::Matrix3d R2diff = (R * R2).inverse();
 
   // Compute opencv remap maps
   cv::Mat R1diff_cv, R2diff_cv;
