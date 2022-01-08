@@ -40,6 +40,14 @@ class Keyframe {
       return have_depth_;
     }
 
+    inline bool hasSem() const {
+      return !sem_img_.empty();
+    }
+
+    inline cv::Mat& getSem() {
+      return sem_img_;
+    }
+
     inline void setPose(const Eigen::Isometry3d& p) {
       pose_ = p;
     }
@@ -56,6 +64,10 @@ class Keyframe {
 
     inline void setDepth(const Keyframe& key) {
       setDepth(key.rect_dpose_, key.rect_img_, key.depth_);
+    }
+
+    inline void setSem(const cv::Mat& sem) {
+      sem_img_ = sem;
     }
 
     Eigen::Array4Xf getDepthCloud() const;
@@ -98,10 +110,13 @@ class Keyframe {
     const cv::Mat img_;
     cv::Mat rect_img_;
 
+    //! Semantic image, later can be overwritten with rect image
+    cv::Mat sem_img_;
+
     bool have_depth_ = false;
     //! Depth cloud associated with keyframe for the same image, stored row-major
     std::shared_ptr<Eigen::Array3Xd> depth_;
 };
 
 // Using pointers here should make sort faster
-using Keyframes = std::map<long, std::shared_ptr<Keyframe>>;
+using Keyframes = std::map<long, std::unique_ptr<Keyframe>>;

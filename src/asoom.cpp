@@ -20,18 +20,25 @@ ASOOM::~ASOOM() {
   map_thread_.join();
 }
 
-void ASOOM::addFrame(long stamp, cv::Mat& img, const Eigen::Isometry3d& pose) {
+void ASOOM::addFrame(long stamp, const cv::Mat& img, const Eigen::Isometry3d& pose) {
   if (stamp > most_recent_stamp_) {
     most_recent_stamp_ = stamp;
   }
 
   std::scoped_lock<std::mutex> lock(keyframe_input_.m);
-  keyframe_input_.buf.emplace_back(std::make_shared<Keyframe>(stamp, img, pose));
+  keyframe_input_.buf.emplace_back(std::make_unique<Keyframe>(stamp, img, pose));
 }
 
 void ASOOM::addGPS(long stamp, const Eigen::Vector3d& pos) {
   std::scoped_lock<std::mutex> lock(gps_input_.m);
   gps_input_.buf.emplace_back(GPS(stamp, pos));
+}
+
+void ASOOM::addSemantics(long stamp, const cv::Mat& sem) {
+  if (params_.use_semantics) {
+    std::scoped_lock<std::mutex> lock(semantic_input_.m);
+    semantic_input_.buf.emplace_back(SemanticImage(stamp, sem));
+  }
 }
 
 std::vector<Eigen::Isometry3d> ASOOM::getGraph() {
@@ -172,11 +179,14 @@ bool ASOOM::StereoThread::operator()() {
     return true;
   }
   dense_stereo_.setIntrinsics(rectifier_.getOutputK(), rectifier_.getOutputSize());
+  use_semantics_ = asoom_->params_.use_semantics;
 
   using namespace std::chrono;
   auto next = steady_clock::now();
   while (!asoom_->exit_threads_flag_) {
     auto start_t = high_resolution_clock::now();
+    parseSemanticBuffer();
+    auto parse_semantic_buffer_t = high_resolution_clock::now();
     auto keyframes_to_compute = getKeyframesToCompute();
     auto buffer_keyframes_t = high_resolution_clock::now();
     computeDepths(keyframes_to_compute);
@@ -185,8 +195,10 @@ bool ASOOM::StereoThread::operator()() {
     auto update_keyframes_t = high_resolution_clock::now();
     
     std::cout << "\033[34m" << "[StT] ======== Stereo Thread ========" << std::endl << 
+      "[StT] Parsing Semantic Segmentation Buffer: " << 
+      duration_cast<microseconds>(parse_semantic_buffer_t - start_t).count() << "us" << std::endl <<
       "[StT] Buffering Keyframes: " << 
-      duration_cast<microseconds>(buffer_keyframes_t - start_t).count() << "us" << std::endl <<
+      duration_cast<microseconds>(buffer_keyframes_t - parse_semantic_buffer_t).count() << "us" << std::endl <<
       "[StT] Computing Depths: " << 
       duration_cast<microseconds>(compute_depths_t - buffer_keyframes_t).count() << "us" << std::endl <<
       "[StT] Keyframe Updating: " << 
@@ -201,16 +213,43 @@ bool ASOOM::StereoThread::operator()() {
   return true;
 }
 
+void ASOOM::StereoThread::parseSemanticBuffer() {
+  std::scoped_lock<std::mutex> lock(asoom_->semantic_input_.m);
+  std::unique_lock key_lock(asoom_->keyframes_.m);
+
+  for (auto sem_it = asoom_->semantic_input_.buf.begin(); 
+       sem_it != asoom_->semantic_input_.buf.end();) 
+  {
+    try {
+      asoom_->keyframes_.frames.at(sem_it->stamp)->setSem(sem_it->sem);
+      sem_it = asoom_->semantic_input_.buf.erase(sem_it);
+    } catch (const std::out_of_range& ex) {
+      if (sem_it->stamp < asoom_->keyframes_.frames.rbegin()->second->getStamp()) {
+        // If we have newer images in the keyframe buffer, can safely assume that we are not
+        // going to add a new keyframe which is older, so will never match
+        sem_it = asoom_->semantic_input_.buf.erase(sem_it);
+      } else {
+        sem_it++;
+      }   
+    }
+  }
+}
+
 std::vector<Keyframe> ASOOM::StereoThread::getKeyframesToCompute() {
   std::shared_lock lock(asoom_->keyframes_.m);
 
   std::vector<Keyframe> keyframes_to_compute;
-  std::shared_ptr<Keyframe> last_keyframe;
+  // Pointer to keyframes managed by unique_ptr
+  const Keyframe* last_keyframe = nullptr;
   for (const auto& frame : asoom_->keyframes_.frames) {
-    if (!frame.second->hasDepth()) {
+    // If using semantics, then require having semantics
+    if (!frame.second->hasDepth() && 
+        (frame.second->hasSem() || !use_semantics_)) 
+    {
       if (last_keyframe) {
         if (last_keyframe->hasDepth()) {
           // If the previous keyframe has depth then it has not already been added
+          // to keyframes_to_compute and is needed to compute the depth for the next frame
           keyframes_to_compute.push_back(*last_keyframe);
         }
       }
@@ -219,7 +258,7 @@ std::vector<Keyframe> ASOOM::StereoThread::getKeyframesToCompute() {
       // but need to be careful for thread safety
       keyframes_to_compute.push_back(*frame.second);
     }
-    last_keyframe = frame.second;
+    last_keyframe = frame.second.get();
   }
 
   return keyframes_to_compute;
@@ -230,11 +269,14 @@ void ASOOM::StereoThread::computeDepths(std::vector<Keyframe>& frames) {
   const Keyframe *last_frame = nullptr;
   cv::Mat i1m1, i1m2, i2m1, i2m2, rect1, rect2, disp;
   for (auto& frame : frames) {
-    if (last_frame != nullptr) {
+    if (last_frame != nullptr && (frame.hasSem() || !use_semantics_)) {
       auto new_dposes = rectifier_.genRectifyMaps(frame, *last_frame, i1m1, i1m2, i2m1, i2m2);
       // Rectify images
-      rectifier_.rectifyImage(frame.getImg(), i1m1, i1m2, rect1);
-      rectifier_.rectifyImage(last_frame->getImg(), i2m1, i2m2, rect2);
+      Rectifier::rectifyImage(frame.getImg(), i1m1, i1m2, rect1);
+      Rectifier::rectifyImage(last_frame->getImg(), i2m1, i2m2, rect2);
+      if (use_semantics_) {
+        Rectifier::rectifyImage(frame.getSem(), i1m1, i1m2, frame.getSem());
+      }
 
       // Do stereo
       dense_stereo_.computeDisp(rect1, rect2, disp);

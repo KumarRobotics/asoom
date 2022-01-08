@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
   <!--node pkg="image_transport" type="republish" name="republish" output="screen" args="compressed in:=/ovc/rgb/image_color out:=/asoom/img"/-->
+  <node pkg="image_proc" type="image_proc" ns="/ovc/bonus_left/left" name="colorize"/>
 
   <node pkg="asoom" type="asoom_node" name="asoom" output="screen">
     <param name="require_imgs" value="True"/>

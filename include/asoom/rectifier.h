@@ -60,7 +60,7 @@ class Rectifier {
      * Really just a wrapper for cv::remap.  Separate from generating the rect maps
      * beacuse we need to also apply the same map to the semantic layer
      */
-    void rectifyImage(const cv::Mat& input, const cv::Mat& map1, const cv::Mat& map2, 
+    static void rectifyImage(const cv::Mat& input, const cv::Mat& map1, const cv::Mat& map2, 
         cv::Mat& output);
 
     /*!

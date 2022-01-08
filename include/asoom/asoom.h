@@ -25,9 +25,13 @@ class ASOOM {
       //! Distance threshold for creating new keyframe in meters
       float keyframe_dist_thresh_m;
 
-      Params(int ptpm = 1000, int stpm = 1000, int mtps = 1000, float kdtm = 5) :
+      //! If true, require semantic segmentation for images before stereo
+      bool use_semantics;
+
+      Params(int ptpm = 1000, int stpm = 1000, int mtps = 1000, float kdtm = 5, 
+          bool us = false) :
         pgo_thread_period_ms(ptpm), stereo_thread_period_ms(stpm), 
-        map_thread_period_ms(mtps), keyframe_dist_thresh_m(kdtm) {}
+        map_thread_period_ms(mtps), keyframe_dist_thresh_m(kdtm), use_semantics(us) {}
     };
 
     /*!
@@ -49,7 +53,7 @@ class ASOOM {
      * @param img Image associated with frame
      * @param pose Pose of the image in VO/VIO frame
      */
-    void addFrame(long stamp, cv::Mat& img, const Eigen::Isometry3d& pose);
+    void addFrame(long stamp, const cv::Mat& img, const Eigen::Isometry3d& pose);
 
     /*!
      * Add GPS measurement to mapper
@@ -58,6 +62,14 @@ class ASOOM {
      * @param pos GPS position in utm coord
      */
     void addGPS(long stamp, const Eigen::Vector3d& pos);
+
+    /*!
+     * Add semantic image to mapper
+     *
+     * @param stamp Timestamp in nsec since epoch.  Must exactly match frame
+     * @param sem Semantically segmented image
+     */
+    void addSemantics(long stamp, const cv::Mat& sem);
 
     /*!
      * Get the current graph, might not yet be entirely optimized
@@ -101,20 +113,32 @@ class ASOOM {
     struct KeyframeInput {
       std::mutex m;
       // This is a ptr since it may be moved into keyframes_
-      std::list<std::shared_ptr<Keyframe>> buf;
+      std::list<std::unique_ptr<Keyframe>> buf;
     } keyframe_input_;
 
     struct GPS {
       long stamp;
       Eigen::Vector3d utm;
 
-      GPS(long s, Eigen::Vector3d u) : stamp(s), utm(u) {}
+      GPS(long s, const Eigen::Vector3d& u) : stamp(s), utm(u) {}
     };
     //! Input buffer for GPS data
     struct GPSInput {
       std::mutex m;
       std::list<GPS> buf;
     } gps_input_;
+
+    struct SemanticImage {
+      long stamp;
+      cv::Mat sem;
+
+      SemanticImage(long s, const cv::Mat& se) : stamp(s), sem(se) {}
+    };
+    //! Input buffer for semantic segmentation images
+    struct SemanticInput {
+      std::mutex m;
+      std::list<SemanticImage> buf;
+    } semantic_input_;
 
     //! Vector of keyframes.  Important to keep indices synchronized with PoseGraph
     struct KeyframesStruct {
@@ -176,6 +200,8 @@ class ASOOM {
 
         bool operator()();
       private:
+        void parseSemanticBuffer();
+
         std::vector<Keyframe> getKeyframesToCompute();
 
         void computeDepths(std::vector<Keyframe>& frames);
@@ -188,6 +214,8 @@ class ASOOM {
 
         //! Pointer back to parent
         ASOOM * const asoom_;
+
+        bool use_semantics_;
     };
 
     //! Thread managing map building
