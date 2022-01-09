@@ -221,7 +221,7 @@ void ASOOMWrapper::publishRecentPointCloud(const ros::Time& time) {
     // No keyframes with depth yet
     return;
   }
-  Eigen::Array4Xf pc = asoom_->getDepthCloud(stamp);
+  DepthCloudArray pc = asoom_->getDepthCloud(stamp);
 
   sensor_msgs::PointCloud2 cloud;
   cloud.header.stamp = time;
@@ -257,7 +257,14 @@ void ASOOMWrapper::publishRecentPointCloud(const ros::Time& time) {
   rgb_field.count = 1;
   cloud.fields.push_back(rgb_field);
 
-  cloud.point_step = 16;
+  sensor_msgs::PointField class_field;
+  class_field.name = "class";
+  class_field.offset = 16;
+  class_field.datatype = sensor_msgs::PointField::UINT32;
+  class_field.count = 1;
+  cloud.fields.push_back(class_field);
+
+  cloud.point_step = 20;
   cloud.row_step = cloud.point_step * cloud.width;
   cloud.is_dense = true;
 

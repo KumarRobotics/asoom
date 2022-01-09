@@ -54,7 +54,7 @@ std::vector<Eigen::Isometry3d> ASOOM::getGraph() {
   return frame_vec;
 }
 
-Eigen::Array4Xf ASOOM::getDepthCloud(long stamp) {
+DepthCloudArray ASOOM::getDepthCloud(long stamp) {
   std::shared_lock lock(keyframes_.m);
   return keyframes_.frames.at(stamp)->getDepthCloud();
 }

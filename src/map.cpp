@@ -15,7 +15,7 @@ Map::Map(const Params& params) : params_(params) {
   clear();
 }
 
-void Map::addCloud(const Eigen::Array4Xf& cloud, const Eigen::Isometry3d& camera_pose, 
+void Map::addCloud(const DepthCloudArray& cloud, const Eigen::Isometry3d& camera_pose, 
     long stamp) 
 {
   if (stamp > most_recent_stamp_) {

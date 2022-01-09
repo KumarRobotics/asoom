@@ -8,8 +8,11 @@
 
 namespace Eigen {
   using Array5Xd = Array<double, 5, Dynamic>;
+  using Array5Xf = Array<float, 5, Dynamic>;
   using Array6Xd = Array<double, 6, Dynamic>;
 }
+
+using DepthCloudArray = Eigen::Array5Xf;
 
 /*!
  * Manage a single keyframe in the pose graph
@@ -67,10 +70,12 @@ class Keyframe {
     }
 
     inline void setSem(const cv::Mat& sem) {
-      sem_img_ = sem;
+      if (sem.type() == CV_8UC1) {
+        sem_img_ = sem;
+      }
     }
 
-    Eigen::Array4Xf getDepthCloud() const;
+    DepthCloudArray getDepthCloud() const;
 
     bool needsMapUpdate() const;
 

@@ -106,11 +106,11 @@ TEST(ASOOM_asoom_test, test_stereo_thread) {
   // Wait long enough that stereo has completed
   std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-  Eigen::Array4Xf pc = a.getDepthCloud(0);
-  EXPECT_EQ(pc.rows(), 4);
+  DepthCloudArray pc = a.getDepthCloud(0);
+  EXPECT_EQ(pc.rows(), 5);
   EXPECT_EQ(pc.cols(), 0);
 
   pc = a.getDepthCloud(100);
-  EXPECT_EQ(pc.rows(), 4);
+  EXPECT_EQ(pc.rows(), 5);
   EXPECT_TRUE(pc.cols() > 10000);
 }

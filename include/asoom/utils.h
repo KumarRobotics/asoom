@@ -10,15 +10,15 @@
  * @param zone Set equal to UTM zone number, negative for southern version
  */
 Eigen::Vector2d LatLong2UTM(const Eigen::Vector2d& gps_latlong, int& zone) {
-  double n = 0.0016792203863837047; // f/(2-f)
-  double A = 6367449.145823415;
-  Eigen::Vector3d alpha(
+  constexpr double n = 0.0016792203863837047; // f/(2-f)
+  constexpr double A = 6367449.145823415;
+  const Eigen::Vector3d alpha(
       0.0008377318188192541,
       7.608496958699166e-07,
       1.2034877875966646e-09
       );
-  double k0 = 0.9996;
-  double E0 = 500e3;
+  constexpr double k0 = 0.9996;
+  constexpr double E0 = 500e3;
   double N0 = 0;
 
   // Figure out the zone

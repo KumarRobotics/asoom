@@ -3,6 +3,7 @@
 #include <grid_map_ros/grid_map_ros.hpp>
 #include <grid_map_msgs/GridMap.h>
 #include <Eigen/Dense>
+#include "asoom/keyframe.h"
 
 /*!
  * Wraps a GridMap as the underlying data structure, manages integrated map
@@ -27,7 +28,7 @@ class Map {
      * @param camera_pose Camera pose from which cloud projected.
      * @param stamp Timestamp in nsec of cloud
      */
-    void addCloud(const Eigen::Array4Xf& cloud, const Eigen::Isometry3d& camera_pose, 
+    void addCloud(const DepthCloudArray& cloud, const Eigen::Isometry3d& camera_pose, 
         long stamp);
 
     /*!

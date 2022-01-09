@@ -79,7 +79,7 @@ class ASOOM {
     std::vector<Eigen::Isometry3d> getGraph(); 
 
     //! Get the depth cloud for the given stamp
-    Eigen::Array4Xf getDepthCloud(long stamp);
+    DepthCloudArray getDepthCloud(long stamp);
 
     /*!
      * Get the most recent timestamp in the graph

@@ -1,15 +1,16 @@
 #include <iostream>
 #include "asoom/keyframe.h"
+#include "asoom/semantic_color_lut.h"
 
-Eigen::Array4Xf Keyframe::getDepthCloud() const {
+DepthCloudArray Keyframe::getDepthCloud() const {
   if (!hasDepth()) {
-    return Eigen::Array4Xf::Zero(4, 0);
+    return DepthCloudArray::Zero(5, 0);
   }
 
   // transform to global frame
   Eigen::Isometry3d trans = getRectPose();
 
-  Eigen::Array4Xf cloud(4, depth_->cols());
+  DepthCloudArray cloud(5, depth_->cols());
   size_t dense_ind;
   size_t sparse_ind = 0;
   cv::Vec3b bgr;
@@ -25,11 +26,16 @@ Eigen::Array4Xf Keyframe::getDepthCloud() const {
       
       // The weird PCL color format
       bgr = rect_img_.at<cv::Vec3b>(y, x);
-      std::uint32_t rgb_packed = (static_cast<uint32_t>(bgr[2]) << 16 | 
-                                  static_cast<uint32_t>(bgr[1]) << 8 | 
-                                  static_cast<uint32_t>(bgr[0]));
+      uint32_t rgb_packed = SemanticColorLut::packColor(bgr[2], bgr[1], bgr[0]);
       cloud.block<3,1>(0, sparse_ind) = (trans * depth_->col(dense_ind)).cast<float>();
       cloud(3, sparse_ind) = *reinterpret_cast<float*>(&rgb_packed);
+
+      // We pack in the class integer in the same way
+      uint32_t sem_class = 0;
+      if (hasSem()) {
+        sem_class = sem_img_.at<uint8_t>(y, x);
+      }
+      cloud(4, sparse_ind) = *reinterpret_cast<float*>(&sem_class); 
 
       sparse_ind++;
     }

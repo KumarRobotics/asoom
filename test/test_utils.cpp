@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
+#include <ros/package.h>
 #include "asoom/utils.h"
+#include "asoom/semantic_color_lut.h"
 
 TEST(ASOOM_utils, test_utm) {
   // Compare with https://www.latlong.net/lat-long-utm.html
@@ -28,4 +30,38 @@ TEST(ASOOM_utils, test_utm) {
   EXPECT_NEAR(utm[0], 538695.49, 0.01);
   EXPECT_NEAR(utm[1], 3164657.86, 0.01);
   EXPECT_EQ(zone, 17);
+}
+
+TEST(ASOOM_utils, test_sem_color_lut) {
+  SemanticColorLut lut(ros::package::getPath("asoom") + "/config/semantic_lut.yaml");  
+  auto color = SemanticColorLut::unpackColor(lut.ind2Color(0));
+  EXPECT_EQ(color[0], 0);
+  EXPECT_EQ(color[1], 0);
+  EXPECT_EQ(color[2], 0);
+  EXPECT_EQ(lut.color2Ind(SemanticColorLut::packColor(color[0], color[1], color[2])), 0);
+  color = SemanticColorLut::unpackColor(lut.ind2Color(1));
+  EXPECT_EQ(color[0], 255);
+  EXPECT_EQ(color[1], 0);
+  EXPECT_EQ(color[2], 0);
+  EXPECT_EQ(lut.color2Ind(SemanticColorLut::packColor(color[0], color[1], color[2])), 1);
+
+  cv::Mat img = cv::Mat::zeros(500, 500, CV_8UC1);
+  for (uint8_t i=0; i<6; i++) {
+    img.at<uint8_t>(i, 0) = i;
+  }
+  cv::Mat color_img;
+  lut.ind2Color(img, color_img);
+  EXPECT_EQ(color_img.type(), CV_8UC3);
+  EXPECT_EQ(color_img.at<cv::Vec3b>(0, 0), cv::Vec3b(0, 0, 0));
+  EXPECT_EQ(color_img.at<cv::Vec3b>(1, 0), cv::Vec3b(0, 0, 255));
+  EXPECT_EQ(color_img.at<cv::Vec3b>(4, 0), cv::Vec3b(0, 100, 0));
+  EXPECT_EQ(color_img.at<cv::Vec3b>(5, 0), cv::Vec3b(0, 0, 0));
+
+  // Go backwards
+  lut.color2Ind(color_img, img);
+  EXPECT_EQ(img.type(), CV_8UC1);
+  for (uint8_t i=0; i<5; i++) {
+    EXPECT_EQ(img.at<uint8_t>(i, 0), i);
+  }
+  EXPECT_EQ(img.at<uint8_t>(5, 0), 0);
 }
