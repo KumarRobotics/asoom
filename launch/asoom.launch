@@ -16,7 +16,7 @@
     <param name="rectifier_calib_path" value="$(find asoom)/config/aerial_pennov.yaml"/>
     <remap from="~pose" to="/sfm_pose"/>
     <remap from="~img" to="/ovc/bonus_left/left/image_color"/>
-    <remap from="~sem" to="/ovc/bonus_left/left/image_label_viz"/>
+    <remap from="~sem" to="/ovc/bonus_left/left/image_label"/>
   </node>
 
   <node pkg="image_publisher" type="image_publisher" name="map_image_publisher" args="$(find asoom)/maps/grace_quarters.png">
