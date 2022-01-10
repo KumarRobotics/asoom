@@ -23,6 +23,10 @@ ASOOMWrapper::ASOOMWrapper(ros::NodeHandle& nh)
   nh_.param<int>("stereo_thread_period_ms", asoom_params.stereo_thread_period_ms, 1000);
   nh_.param<int>("map_thread_period_ms", asoom_params.map_thread_period_ms, 1000);
   nh_.param<float>("keyframe_dist_thresh_m", asoom_params.keyframe_dist_thresh_m, 1);
+  nh_.param<bool>("use_semantics", asoom_params.use_semantics, false);
+  nh_.param<std::string>("semantic_lut_path", asoom_params.semantic_lut_path, 
+      SemanticColorLut::NO_SEM);
+  use_semantics_ = asoom_params.use_semantics;
 
   // Parameters for PGO
   double pg_bs_p, pg_bs_r, pg_gs, pg_gsps;
@@ -65,12 +69,22 @@ ASOOMWrapper::ASOOMWrapper(ros::NodeHandle& nh)
   nh_.param<double>("map_resolution", map_params.resolution, 0.5);
   nh_.param<double>("map_buffer_size_m", map_params.buffer_size_m, 50);
 
+  if (asoom_params.use_semantics && 
+      asoom_params.semantic_lut_path == SemanticColorLut::NO_SEM) 
+  {
+    std::cout << "\033[31m" << 
+      "[WARNING] Using semantics, but no semantic color LUT is provided." << 
+      "\033[0m" << std::endl;
+  }
+
   std::cout << "\033[32m" << "[ROS] ======== Configuration ========" << std::endl <<
     "[ROS] require_imgs: " << require_imgs_ << std::endl <<
     "[ROS] pgo_thread_period_ms: " << asoom_params.pgo_thread_period_ms << std::endl <<
     "[ROS] stereo_thread_period_ms: " << asoom_params.stereo_thread_period_ms << std::endl <<
     "[ROS] map_thread_period_ms: " << asoom_params.map_thread_period_ms << std::endl <<
     "[ROS] keyframe_dist_thresh_m: " << asoom_params.keyframe_dist_thresh_m << std::endl <<
+    "[ROS] use_semantics: " << asoom_params.use_semantics << std::endl <<
+    "[ROS] semantic_lut_path: " << asoom_params.semantic_lut_path << std::endl <<
     "[ROS] ===============================" << std::endl <<
     "[ROS] pose_graph_between_sigmas_pos: " << pg_bs_p << std::endl <<
     "[ROS] pose_graph_between_sigmas_rot: " << pg_bs_r << std::endl <<
@@ -115,6 +129,11 @@ void ASOOMWrapper::initialize() {
         std::bind(&ASOOMWrapper::poseImgCallback, this, std::placeholders::_1, 
           sensor_msgs::Image::ConstPtr()));
   }
+
+  if (use_semantics_) {
+    sem_sub_ = nh_.subscribe<sensor_msgs::Image>("sem", 10, &ASOOMWrapper::semCallback, this);
+  }
+
   gps_sub_ = nh_.subscribe<sensor_msgs::NavSatFix>("gps", 10, &ASOOMWrapper::gpsCallback, this);
 
   trajectory_viz_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("viz", 1);
@@ -260,7 +279,7 @@ void ASOOMWrapper::publishRecentPointCloud(const ros::Time& time) {
   sensor_msgs::PointField class_field;
   class_field.name = "class";
   class_field.offset = 16;
-  class_field.datatype = sensor_msgs::PointField::UINT32;
+  class_field.datatype = sensor_msgs::PointField::FLOAT32;
   class_field.count = 1;
   cloud.fields.push_back(class_field);
 
@@ -312,6 +331,20 @@ void ASOOMWrapper::gpsCallback(const sensor_msgs::NavSatFix::ConstPtr& gps_msg) 
   // PGO works better with smaller numbers instead of in utm frame directly
   gps.head<2>() -= utm_origin_;
   asoom_->addGPS(gps_msg->header.stamp.toNSec(), gps);
+}
+
+void ASOOMWrapper::semCallback(const sensor_msgs::Image::ConstPtr& sem_msg) {
+  cv::Mat img;
+  if (sem_msg->encoding == sensor_msgs::image_encodings::BGR8 ||
+      sem_msg->encoding == sensor_msgs::image_encodings::TYPE_8UC3) {
+    // Color
+    img = cv_bridge::toCvCopy(sem_msg, sensor_msgs::image_encodings::BGR8)->image;
+  } else if (sem_msg->encoding == sensor_msgs::image_encodings::MONO8 ||
+             sem_msg->encoding == sensor_msgs::image_encodings::TYPE_8UC1) {
+    // Gray (values are class indices)
+    img = cv_bridge::toCvCopy(sem_msg, sensor_msgs::image_encodings::MONO8)->image;
+  }
+  asoom_->addSemantics(sem_msg->header.stamp.toNSec(), img);
 }
 
 geometry_msgs::Point ASOOMWrapper::Eigen2ROS(const Eigen::Vector3d& pos) {

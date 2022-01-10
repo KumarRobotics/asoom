@@ -4,6 +4,7 @@
 #include <grid_map_msgs/GridMap.h>
 #include <Eigen/Dense>
 #include "asoom/keyframe.h"
+#include "asoom/semantic_color_lut.h"
 
 /*!
  * Wraps a GridMap as the underlying data structure, manages integrated map
@@ -19,7 +20,7 @@ class Map {
       Params() : Params(0.1, 50) {}
     };
 
-    Map(const Params& params);
+    Map(const Params& params, const SemanticColorLut& lut);
 
     /*!
      * Add a new pointcloud to the map.
@@ -48,6 +49,8 @@ class Map {
 
   private:
     const Params params_;
+
+    SemanticColorLut semantic_color_lut_;
 
     grid_map::GridMap map_;
 

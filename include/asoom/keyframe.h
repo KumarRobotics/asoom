@@ -47,7 +47,7 @@ class Keyframe {
       return !sem_img_.empty();
     }
 
-    inline cv::Mat& getSem() {
+    inline const cv::Mat& getSem() const {
       return sem_img_;
     }
 

@@ -31,11 +31,11 @@ DepthCloudArray Keyframe::getDepthCloud() const {
       cloud(3, sparse_ind) = *reinterpret_cast<float*>(&rgb_packed);
 
       // We pack in the class integer in the same way
-      uint32_t sem_class = 0;
-      if (hasSem()) {
+      uint8_t sem_class = 0;
+      if (hasSem() && sem_img_.size() == rect_img_.size()) {
         sem_class = sem_img_.at<uint8_t>(y, x);
       }
-      cloud(4, sparse_ind) = *reinterpret_cast<float*>(&sem_class); 
+      cloud(4, sparse_ind) = sem_class; 
 
       sparse_ind++;
     }

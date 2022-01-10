@@ -41,6 +41,9 @@ class ASOOMWrapper {
     //! Callback for GPS data
     void gpsCallback(const sensor_msgs::NavSatFix::ConstPtr& gps_msg);
     
+    //! Callback for Semantic data
+    void semCallback(const sensor_msgs::Image::ConstPtr& sem_msg);
+    
     //! Convert Eigen position to ROS point
     static geometry_msgs::Point Eigen2ROS(const Eigen::Vector3d& pos);
 
@@ -64,6 +67,9 @@ class ASOOMWrapper {
     //! If true, sub to synchronized images and poses
     bool require_imgs_;
 
+    //! If true, sub to semantic image topic
+    bool use_semantics_;
+
     Eigen::Vector2d utm_origin_;
 
     //! ROS Pubs and subs
@@ -71,7 +77,7 @@ class ASOOMWrapper {
     std::unique_ptr<message_filters::Subscriber<sensor_msgs::Image>> img_sync_sub_;
     std::unique_ptr<message_filters::TimeSynchronizer<geometry_msgs::PoseStamped, 
       sensor_msgs::Image>> pose_img_sync_sub_;
-    ros::Subscriber gps_sub_, pose_sub_;
+    ros::Subscriber gps_sub_, pose_sub_, sem_sub_;
     ros::Publisher trajectory_viz_pub_, recent_cloud_pub_, map_pub_;
 
     //! Timer to loop and publish visualizations and the map

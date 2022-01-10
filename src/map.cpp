@@ -1,10 +1,13 @@
 #include "asoom/map.h"
 
-Map::Map(const Params& params) : params_(params) {
+Map::Map(const Params& params, const SemanticColorLut& lut) : 
+  params_(params), semantic_color_lut_(lut)
+{
   map_ = grid_map::GridMap({
       "elevation", 
       "color", 
       "semantics",
+      "semantics_viz",
       "view_angle",
       "num_points"});
   // Reset layers to the appropriate values
@@ -32,6 +35,7 @@ void Map::addCloud(const DepthCloudArray& cloud, const Eigen::Isometry3d& camera
   grid_map::Matrix &elevation_layer = map_["elevation"];
   grid_map::Matrix &color_layer = map_["color"];
   grid_map::Matrix &semantics_layer = map_["semantics"];
+  grid_map::Matrix &semantics_viz_layer = map_["semantics_viz"];
   grid_map::Matrix &view_angle_layer = map_["view_angle"];
   grid_map::Matrix &num_points_layer = map_["num_points"];
 
@@ -60,6 +64,9 @@ void Map::addCloud(const DepthCloudArray& cloud, const Eigen::Isometry3d& camera
     if (view_angle < view_angle_layer(ind[0], ind[1])) {
       view_angle_layer(ind[0], ind[1]) = view_angle;
       color_layer(ind[0], ind[1]) = cloud(3, col);
+      semantics_layer(ind[0], ind[1]) = cloud(4, col);
+      uint32_t sem_color_packed = semantic_color_lut_.ind2Color(cloud(4, col));
+      semantics_viz_layer(ind[0], ind[1]) = *reinterpret_cast<float*>(&sem_color_packed);
     }
   }
 }
@@ -69,6 +76,7 @@ void Map::clear() {
   map_.setConstant("elevation", NAN);
   map_.setConstant("color", NAN);
   map_.setConstant("semantics", NAN);
+  map_.setConstant("semantics_viz", NAN);
   map_.setConstant("view_angle", M_PI/2);
   map_.setConstant("num_points", 0);
 }

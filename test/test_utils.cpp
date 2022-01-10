@@ -45,7 +45,7 @@ TEST(ASOOM_utils, test_sem_color_lut) {
   EXPECT_EQ(color[2], 0);
   EXPECT_EQ(lut.color2Ind(SemanticColorLut::packColor(color[0], color[1], color[2])), 1);
 
-  cv::Mat img = cv::Mat::zeros(500, 500, CV_8UC1);
+  cv::Mat img = cv::Mat::zeros(1000, 1000, CV_8UC1);
   for (uint8_t i=0; i<6; i++) {
     img.at<uint8_t>(i, 0) = i;
   }

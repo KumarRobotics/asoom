@@ -9,7 +9,8 @@ ASOOM::ASOOM(const Params& asoom_params, const PoseGraph::Params& pg_params,
     const Map::Params& map_params) 
   : pose_graph_thread_(PoseGraphThread(this, pg_params)),
     stereo_thread_(StereoThread(this, rect_params, stereo_params)),
-    map_thread_(MapThread(this, map_params)),
+    semantic_color_lut_(asoom_params.semantic_lut_path),
+    map_thread_(MapThread(this, map_params, semantic_color_lut_)),
     params_(asoom_params) {}
 
 ASOOM::~ASOOM() {
@@ -36,8 +37,14 @@ void ASOOM::addGPS(long stamp, const Eigen::Vector3d& pos) {
 
 void ASOOM::addSemantics(long stamp, const cv::Mat& sem) {
   if (params_.use_semantics) {
+    SemanticImage sem_ind(stamp, cv::Mat());
+    if (sem.type() == CV_8UC1) {
+      sem_ind.sem = sem;
+    } else {
+      semantic_color_lut_.color2Ind(sem, sem_ind.sem);      
+    }
     std::scoped_lock<std::mutex> lock(semantic_input_.m);
-    semantic_input_.buf.emplace_back(SemanticImage(stamp, sem));
+    semantic_input_.buf.emplace_back(sem_ind);
   }
 }
 
@@ -220,10 +227,11 @@ void ASOOM::StereoThread::parseSemanticBuffer() {
   for (auto sem_it = asoom_->semantic_input_.buf.begin(); 
        sem_it != asoom_->semantic_input_.buf.end();) 
   {
-    try {
-      asoom_->keyframes_.frames.at(sem_it->stamp)->setSem(sem_it->sem);
+    auto key_it = asoom_->keyframes_.frames.find(sem_it->stamp);
+    if (key_it != asoom_->keyframes_.frames.end()) {
+      key_it->second->setSem(sem_it->sem);
       sem_it = asoom_->semantic_input_.buf.erase(sem_it);
-    } catch (const std::out_of_range& ex) {
+    } else if (asoom_->keyframes_.frames.size() > 0) {
       if (sem_it->stamp < asoom_->keyframes_.frames.rbegin()->second->getStamp()) {
         // If we have newer images in the keyframe buffer, can safely assume that we are not
         // going to add a new keyframe which is older, so will never match
@@ -231,6 +239,9 @@ void ASOOM::StereoThread::parseSemanticBuffer() {
       } else {
         sem_it++;
       }   
+    } else {
+      // No keyframes yet, don't do anything
+      return;
     }
   }
 }
@@ -267,7 +278,7 @@ std::vector<Keyframe> ASOOM::StereoThread::getKeyframesToCompute() {
 void ASOOM::StereoThread::computeDepths(std::vector<Keyframe>& frames) {
   // Use c ptr because we don't want the pointer to try to manage the underlying memory
   const Keyframe *last_frame = nullptr;
-  cv::Mat i1m1, i1m2, i2m1, i2m2, rect1, rect2, disp;
+  cv::Mat i1m1, i1m2, i2m1, i2m2, rect1, rect2, disp, sem_rect;
   for (auto& frame : frames) {
     if (last_frame != nullptr && (frame.hasSem() || !use_semantics_)) {
       auto new_dposes = rectifier_.genRectifyMaps(frame, *last_frame, i1m1, i1m2, i2m1, i2m2);
@@ -275,7 +286,8 @@ void ASOOM::StereoThread::computeDepths(std::vector<Keyframe>& frames) {
       Rectifier::rectifyImage(frame.getImg(), i1m1, i1m2, rect1);
       Rectifier::rectifyImage(last_frame->getImg(), i2m1, i2m2, rect2);
       if (use_semantics_) {
-        Rectifier::rectifyImage(frame.getSem(), i1m1, i1m2, frame.getSem());
+        Rectifier::rectifyImage(frame.getSem(), i1m1, i1m2, sem_rect);
+        frame.setSem(sem_rect.clone());
       }
 
       // Do stereo
@@ -295,8 +307,12 @@ void ASOOM::StereoThread::computeDepths(std::vector<Keyframe>& frames) {
 void ASOOM::StereoThread::updateKeyframes(const std::vector<Keyframe>& frames) {
   std::unique_lock lock(asoom_->keyframes_.m);
   for (const auto& frame : frames) {
-    if (!asoom_->keyframes_.frames.at(frame.getStamp())->hasDepth()) {
-      asoom_->keyframes_.frames.at(frame.getStamp())->setDepth(frame);
+    Keyframe *key = asoom_->keyframes_.frames.at(frame.getStamp()).get();
+    if (!key->hasDepth()) {
+      key->setDepth(frame);
+      if (use_semantics_ && frame.hasSem()) {
+        key->setSem(frame.getSem());
+      }
     }
   }
 }

@@ -8,6 +8,7 @@
 #include "asoom/dense_stereo.h"
 #include "asoom/keyframe.h"
 #include "asoom/map.h"
+#include "asoom/semantic_color_lut.h"
 
 /*!
  * Manager class for system
@@ -27,11 +28,13 @@ class ASOOM {
 
       //! If true, require semantic segmentation for images before stereo
       bool use_semantics;
+      std::string semantic_lut_path;
 
       Params(int ptpm = 1000, int stpm = 1000, int mtps = 1000, float kdtm = 5, 
-          bool us = false) :
+          bool us = false, const std::string& slp = SemanticColorLut::NO_SEM) :
         pgo_thread_period_ms(ptpm), stereo_thread_period_ms(stpm), 
-        map_thread_period_ms(mtps), keyframe_dist_thresh_m(kdtm), use_semantics(us) {}
+        map_thread_period_ms(mtps), keyframe_dist_thresh_m(kdtm), use_semantics(us),
+        semantic_lut_path(slp) {}
     };
 
     /*!
@@ -67,7 +70,8 @@ class ASOOM {
      * Add semantic image to mapper
      *
      * @param stamp Timestamp in nsec since epoch.  Must exactly match frame
-     * @param sem Semantically segmented image
+     * @param sem Semantically segmented image.  Can be single channel with class
+     *  indices, or can be color viz image
      */
     void addSemantics(long stamp, const cv::Mat& sem);
 
@@ -108,6 +112,9 @@ class ASOOM {
 
     //! Parameters for high level system
     const Params params_;
+
+    //! Manage converting between color semantics and integer classes
+    SemanticColorLut semantic_color_lut_;
 
     //! Input buffer for keyframes
     struct KeyframeInput {
@@ -222,7 +229,8 @@ class ASOOM {
     std::thread map_thread_;
     class MapThread {
       public:
-        MapThread(ASOOM *a, const Map::Params& p) : asoom_(a), map_(p) {}
+        MapThread(ASOOM *a, const Map::Params& p, const SemanticColorLut& lut) : 
+          asoom_(a), map_(p, lut) {}
 
         bool operator()();
       private:

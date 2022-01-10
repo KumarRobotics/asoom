@@ -2,18 +2,20 @@
 #include "asoom/semantic_color_lut.h"
 
 SemanticColorLut::SemanticColorLut(const std::string& lut_path) {
-  const YAML::Node lut = YAML::LoadFile(lut_path);
-  for (const auto& color : lut) {
-    if (color.size() != 3) {
-      throw invalid_lut_file_exception();
+  if (lut_path != NO_SEM) {
+    const YAML::Node lut = YAML::LoadFile(lut_path);
+    for (const auto& color : lut) {
+      if (color.size() != 3) {
+        throw invalid_lut_file_exception();
+      }
+
+      uint32_t rgb_packed = packColor(color[0].as<uint32_t>(),
+                                      color[1].as<uint32_t>(),
+                                      color[2].as<uint32_t>());
+
+      ind_to_color_.push_back(rgb_packed);
+      color_to_ind_.insert({rgb_packed, ind_to_color_.size()});
     }
-
-    uint32_t rgb_packed = packColor(color[0].as<uint32_t>(),
-                                    color[1].as<uint32_t>(),
-                                    color[2].as<uint32_t>());
-
-    ind_to_color_.push_back(rgb_packed);
-    color_to_ind_.insert({rgb_packed, ind_to_color_.size()});
   }
 }
 

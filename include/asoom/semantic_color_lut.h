@@ -19,7 +19,8 @@ class SemanticColorLut {
       }
     };
 
-    SemanticColorLut(const std::string& lut_path);
+    inline static const std::string NO_SEM = "NO_SEM_MODE";
+    SemanticColorLut(const std::string& lut_path = NO_SEM);
 
     static inline uint32_t packColor(uint8_t r, uint8_t g, uint8_t b) {
       return (static_cast<uint32_t>(r) << 16 | 

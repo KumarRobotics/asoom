@@ -5,6 +5,8 @@
 
   <node pkg="asoom" type="asoom_node" name="asoom" output="screen">
     <param name="require_imgs" value="True"/>
+    <param name="use_semantics" value="True"/>
+    <param name="semantic_lut_path" value="$(find asoom)/config/semantic_lut.yaml"/>
     <param name="pose_graph_fix_scale" value="True"/>
     <param name="keyframe_dist_thresh_m" value="1"/>
 
@@ -14,6 +16,7 @@
     <param name="rectifier_calib_path" value="$(find asoom)/config/aerial_pennov.yaml"/>
     <remap from="~pose" to="/sfm_pose"/>
     <remap from="~img" to="/ovc/bonus_left/left/image_color"/>
+    <remap from="~sem" to="/ovc/bonus_left/left/image_label_viz"/>
   </node>
 
   <node pkg="image_publisher" type="image_publisher" name="map_image_publisher" args="$(find asoom)/maps/grace_quarters.png">
