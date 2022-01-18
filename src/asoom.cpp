@@ -125,7 +125,11 @@ bool ASOOM::PoseGraphThread::operator()() {
     }
 
     next += milliseconds(asoom_->params_.pgo_thread_period_ms);
-    std::this_thread::sleep_until(next);
+    if (next < steady_clock::now()) {
+      next = steady_clock::now();
+    } else {
+      std::this_thread::sleep_until(next);
+    }
   }
   std::cout << "\033[33m" << "[PGT] Pose Graph Thread Exited" << "\033[0m" << std::endl;
   return true;
@@ -214,7 +218,11 @@ bool ASOOM::StereoThread::operator()() {
       std::endl << "\033[0m" << std::flush;
 
     next += milliseconds(asoom_->params_.stereo_thread_period_ms);
-    std::this_thread::sleep_until(next);
+    if (next < steady_clock::now()) {
+      next = steady_clock::now();
+    } else {
+      std::this_thread::sleep_until(next);
+    }
   }
   std::cout << "\033[34m" << "[StT] Stereo Thread Exited" << "\033[0m" << std::endl;
   return true;
@@ -351,7 +359,11 @@ bool ASOOM::MapThread::operator()() {
       "\033[0m" << std::flush;
 
     next += milliseconds(asoom_->params_.map_thread_period_ms);
-    std::this_thread::sleep_until(next);
+    if (next < steady_clock::now()) {
+      next = steady_clock::now();
+    } else {
+      std::this_thread::sleep_until(next);
+    }
   }
   std::cout << "\033[35m" << "[Map] Map Thread Exited" << "\033[0m" << std::endl;
   return true;

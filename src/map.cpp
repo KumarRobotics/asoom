@@ -87,12 +87,14 @@ void Map::resizeToBounds(const Eigen::Vector2d& min, const Eigen::Vector2d& max)
 
   grid_map::Length diff = center_pos.array() - size/2 - min.array() + params_.buffer_size_m;
   if ((diff > 0).any()) {
-    map_.grow(size + diff.cwiseMax(0), grid_map::GridMap::SW);
+    size += diff.cwiseMax(0);
+    map_.grow(size, grid_map::GridMap::SW);
   }
 
   diff = -center_pos.array() - size/2 + max.array() + params_.buffer_size_m;
   if ((diff > 0).any()) {
-    map_.grow(size + diff.cwiseMax(0), grid_map::GridMap::NE);
+    size += diff.cwiseMax(0);
+    map_.grow(size, grid_map::GridMap::NE);
   }
 }
 
