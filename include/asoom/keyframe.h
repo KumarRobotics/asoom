@@ -51,6 +51,14 @@ class Keyframe {
       return sem_img_;
     }
 
+    inline bool hasRepublished() const {
+      return republished_;
+    }
+
+    inline void republish() {
+      republished_ = true;
+    }
+
     inline void setPose(const Eigen::Isometry3d& p) {
       pose_ = p;
     }
@@ -121,6 +129,9 @@ class Keyframe {
     bool have_depth_ = false;
     //! Depth cloud associated with keyframe for the same image, stored row-major
     std::shared_ptr<Eigen::Array3Xd> depth_;
+
+    //! True if the keyframe image has been republished
+    bool republished_ = false;
 };
 
 // Using pointers here should make sort faster

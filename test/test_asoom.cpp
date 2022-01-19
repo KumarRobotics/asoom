@@ -88,6 +88,11 @@ TEST(ASOOM_asoom_test, test_stereo_thread) {
         0.886253,
        -0.0204316)); //wxyz
   a.addFrame(0, im1, pose1);
+
+  // Wait to make sure pose graph thread has run
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  EXPECT_EQ(a.getNewKeyframes().size(), 1);
+  EXPECT_EQ(a.getNewKeyframes().size(), 0);
   
   cv::Mat im2 = cv::imread(ros::package::getPath("asoom") + 
                            "/test/test_imgs/1635642165797544512.jpg");
@@ -105,6 +110,8 @@ TEST(ASOOM_asoom_test, test_stereo_thread) {
 
   // Wait long enough that stereo has completed
   std::this_thread::sleep_for(std::chrono::milliseconds(500));
+  EXPECT_EQ(a.getNewKeyframes().size(), 1);
+  EXPECT_EQ(a.getNewKeyframes().size(), 0);
 
   DepthCloudArray pc = a.getDepthCloud(0);
   EXPECT_EQ(pc.rows(), 5);

@@ -27,12 +27,16 @@ class ASOOMWrapper {
      * LOCAL FUNCTIONS
      ***********************************************************/
 
+    //! Helper function to create ASOOM object
+    static ASOOM createASOOM(ros::NodeHandle& nh);
+
     //! Called to publish output
     void outputCallback(const ros::TimerEvent& event);
 
     void publishPoseGraphViz(const ros::Time& time);
     void publishRecentPointCloud(const ros::Time& time);
     void publishUTMTransform(const ros::Time& time);
+    void publishKeyframeImgs();
 
     //! Callback for VO.  Pass empty image pointer if only tracking pose
     void poseImgCallback(const geometry_msgs::PoseStamped::ConstPtr& pose_msg,
@@ -62,7 +66,7 @@ class ASOOMWrapper {
 
     ros::NodeHandle nh_;
 
-    std::unique_ptr<ASOOM> asoom_;
+    ASOOM asoom_;
 
     //! If true, sub to synchronized images and poses
     bool require_imgs_;
@@ -78,7 +82,7 @@ class ASOOMWrapper {
     std::unique_ptr<message_filters::TimeSynchronizer<geometry_msgs::PoseStamped, 
       sensor_msgs::Image>> pose_img_sync_sub_;
     ros::Subscriber gps_sub_, pose_sub_, sem_sub_;
-    ros::Publisher trajectory_viz_pub_, recent_cloud_pub_, map_pub_;
+    ros::Publisher trajectory_viz_pub_, recent_cloud_pub_, map_pub_, keyframe_img_pub_;
 
     //! Timer to loop and publish visualizations and the map
     ros::Timer output_timer_;

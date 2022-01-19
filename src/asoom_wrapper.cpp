@@ -11,63 +11,68 @@
 #include "asoom/utils.h"
 
 ASOOMWrapper::ASOOMWrapper(ros::NodeHandle& nh)
-  : frustum_pts_(initFrustumPts(1)), nh_(nh)
+  : frustum_pts_(initFrustumPts(1)), nh_(nh), asoom_(createASOOM(nh))
 {
   utm_origin_ = Eigen::Vector2d::Zero();
 
   nh_.param<bool>("require_imgs", require_imgs_, true);
+  nh_.param<bool>("use_semantics", use_semantics_, false);
+}
 
+ASOOM ASOOMWrapper::createASOOM(ros::NodeHandle& nh) {
   // Top level parameters
   ASOOM::Params asoom_params;
-  nh_.param<int>("pgo_thread_period_ms", asoom_params.pgo_thread_period_ms, 1000);
-  nh_.param<int>("stereo_thread_period_ms", asoom_params.stereo_thread_period_ms, 1000);
-  nh_.param<int>("map_thread_period_ms", asoom_params.map_thread_period_ms, 1000);
-  nh_.param<float>("keyframe_dist_thresh_m", asoom_params.keyframe_dist_thresh_m, 1);
-  nh_.param<bool>("use_semantics", asoom_params.use_semantics, false);
-  nh_.param<std::string>("semantic_lut_path", asoom_params.semantic_lut_path, 
+  nh.param<int>("pgo_thread_period_ms", asoom_params.pgo_thread_period_ms, 1000);
+  nh.param<int>("stereo_thread_period_ms", asoom_params.stereo_thread_period_ms, 1000);
+  nh.param<int>("map_thread_period_ms", asoom_params.map_thread_period_ms, 1000);
+  nh.param<float>("keyframe_dist_thresh_m", asoom_params.keyframe_dist_thresh_m, 1);
+  nh.param<bool>("use_semantics", asoom_params.use_semantics, false);
+  nh.param<std::string>("semantic_lut_path", asoom_params.semantic_lut_path, 
       SemanticColorLut::NO_SEM);
-  use_semantics_ = asoom_params.use_semantics;
 
   // Parameters for PGO
   double pg_bs_p, pg_bs_r, pg_gs, pg_gsps;
   bool pg_fs;
   int pg_nfi;
-  nh_.param<double>("pose_graph_between_sigmas_pos", pg_bs_p, 0.05);
-  nh_.param<double>("pose_graph_between_sigmas_rot", pg_bs_r, 0.05);
-  nh_.param<double>("pose_graph_gps_sigmas", pg_gs, 0.5);
-  nh_.param<double>("pose_graph_gps_sigma_per_sec", pg_gsps, 0.5);
-  nh_.param<bool>("pose_graph_fix_scale", pg_fs, false);
-  nh_.param<int>("pose_graph_num_frames_init", pg_nfi, 5);
+  nh.param<double>("pose_graph_between_sigmas_pos", pg_bs_p, 0.05);
+  nh.param<double>("pose_graph_between_sigmas_rot", pg_bs_r, 0.05);
+  nh.param<double>("pose_graph_gps_sigmas", pg_gs, 0.5);
+  nh.param<double>("pose_graph_gps_sigma_per_sec", pg_gsps, 0.5);
+  nh.param<bool>("pose_graph_fix_scale", pg_fs, false);
+  nh.param<int>("pose_graph_num_frames_init", pg_nfi, 5);
   PoseGraph::Params pose_graph_params(pg_bs_p, pg_bs_r, pg_gs, pg_gsps, pg_fs, pg_nfi);
+
+  bool require_imgs;
+  nh.param<bool>("require_imgs", require_imgs, true);
 
   // Parameters for Rectifier
   std::string r_calib_path;
   float r_scale;
-  if (require_imgs_) {
-    nh_.param<std::string>("rectifier_calib_path", r_calib_path, "");
+  if (require_imgs) {
+    nh.param<std::string>("rectifier_calib_path", r_calib_path, "");
   } else {
     r_calib_path = Rectifier::NO_IMGS;
   }
-  nh_.param<float>("rectifier_scale", r_scale, 0.5);
+  nh.param<float>("rectifier_scale", r_scale, 0.5);
   Rectifier::Params rectifier_params(r_calib_path, r_scale);
 
   //Parameters for Stereo
   DenseStereo::Params stereo_params;
-  nh_.param<int>("stereo_min_disparity", stereo_params.min_disparity, 1);
-  nh_.param<int>("stereo_num_disparities", stereo_params.num_disparities, 80);
-  nh_.param<int>("stereo_block_size", stereo_params.block_size, 9);
-  nh_.param<int>("stereo_P1_coeff", stereo_params.P1_coeff, 1);
-  nh_.param<int>("stereo_P2_coeff", stereo_params.P2_coeff, 3);
-  nh_.param<int>("stereo_disp_12_map_diff", stereo_params.disp_12_map_diff, 0);
-  nh_.param<int>("stereo_pre_filter_cap", stereo_params.pre_filter_cap, 35);
-  nh_.param<int>("stereo_uniqueness_ratio", stereo_params.uniqueness_ratio, 10);
-  nh_.param<int>("stereo_speckle_window_size", stereo_params.speckle_window_size, 100);
-  nh_.param<int>("stereo_speckle_range", stereo_params.speckle_range, 20);
+  nh.param<int>("stereo_min_disparity", stereo_params.min_disparity, 1);
+  nh.param<int>("stereo_num_disparities", stereo_params.num_disparities, 80);
+  nh.param<int>("stereo_block_size", stereo_params.block_size, 9);
+  nh.param<int>("stereo_P1_coeff", stereo_params.P1_coeff, 1);
+  nh.param<int>("stereo_P2_coeff", stereo_params.P2_coeff, 3);
+  nh.param<int>("stereo_disp_12_map_diff", stereo_params.disp_12_map_diff, 0);
+  nh.param<int>("stereo_pre_filter_cap", stereo_params.pre_filter_cap, 35);
+  nh.param<int>("stereo_uniqueness_ratio", stereo_params.uniqueness_ratio, 10);
+  nh.param<int>("stereo_speckle_window_size", stereo_params.speckle_window_size, 100);
+  nh.param<int>("stereo_speckle_range", stereo_params.speckle_range, 20);
 
   // Parameters for Map
   Map::Params map_params;
-  nh_.param<double>("map_resolution", map_params.resolution, 0.5);
-  nh_.param<double>("map_buffer_size_m", map_params.buffer_size_m, 50);
+  nh.param<double>("map_resolution", map_params.resolution, 0.5);
+  nh.param<double>("map_buffer_size_m", map_params.buffer_size_m, 50);
 
   if (asoom_params.use_semantics && 
       asoom_params.semantic_lut_path == SemanticColorLut::NO_SEM) 
@@ -78,7 +83,7 @@ ASOOMWrapper::ASOOMWrapper(ros::NodeHandle& nh)
   }
 
   std::cout << "\033[32m" << "[ROS] ======== Configuration ========" << std::endl <<
-    "[ROS] require_imgs: " << require_imgs_ << std::endl <<
+    "[ROS] require_imgs: " << require_imgs << std::endl <<
     "[ROS] pgo_thread_period_ms: " << asoom_params.pgo_thread_period_ms << std::endl <<
     "[ROS] stereo_thread_period_ms: " << asoom_params.stereo_thread_period_ms << std::endl <<
     "[ROS] map_thread_period_ms: " << asoom_params.map_thread_period_ms << std::endl <<
@@ -111,8 +116,7 @@ ASOOMWrapper::ASOOMWrapper(ros::NodeHandle& nh)
     "[ROS] map_buffer_size_m: " << map_params.buffer_size_m << std::endl << 
     "[ROS] ====== End Configuration ======" << "\033[0m" << std::endl;
 
-  asoom_ = std::make_unique<ASOOM>(asoom_params, pose_graph_params, rectifier_params, 
-      stereo_params, map_params);
+  return ASOOM(asoom_params, pose_graph_params, rectifier_params, stereo_params, map_params);
 }
 
 void ASOOMWrapper::initialize() {
@@ -130,8 +134,11 @@ void ASOOMWrapper::initialize() {
           sensor_msgs::Image::ConstPtr()));
   }
 
-  if (use_semantics_) {
+  if (use_semantics_ && require_imgs_) {
     sem_sub_ = nh_.subscribe<sensor_msgs::Image>("sem", 10, &ASOOMWrapper::semCallback, this);
+
+    // Want large buffer, since will be all keyframes from the past sec or so
+    keyframe_img_pub_ = nh_.advertise<sensor_msgs::Image>("keyframe_img", 100);
   }
 
   gps_sub_ = nh_.subscribe<sensor_msgs::NavSatFix>("gps", 10, &ASOOMWrapper::gpsCallback, this);
@@ -170,11 +177,12 @@ void ASOOMWrapper::outputCallback(const ros::TimerEvent& event) {
 
   auto start_t = high_resolution_clock::now();
   ros::Time time;
-  time.fromNSec(asoom_->getMostRecentStamp());
+  time.fromNSec(asoom_.getMostRecentStamp());
   publishPoseGraphViz(time);
   publishRecentPointCloud(time);
   publishUTMTransform(time);
-  map_pub_.publish(asoom_->getMapMessage());
+  publishKeyframeImgs();
+  map_pub_.publish(asoom_.getMapMessage());
   auto end_t = high_resolution_clock::now();
 
   std::cout << "\033[32m" << "[ROS] Output Visualization: " <<
@@ -217,7 +225,7 @@ void ASOOMWrapper::publishPoseGraphViz(const ros::Time& time) {
   cam_marker.color.g = 1;
   cam_marker.color.b = 0;
 
-  std::vector<Eigen::Isometry3d> poses = asoom_->getGraph();
+  std::vector<Eigen::Isometry3d> poses = asoom_.getGraph();
   std::cout << "\033[32m" << "[ROS] Keyframe count: " << poses.size() << "\033[0m" << std::endl;
 
   for (const auto& pose : poses) {
@@ -235,12 +243,12 @@ void ASOOMWrapper::publishPoseGraphViz(const ros::Time& time) {
 }
 
 void ASOOMWrapper::publishRecentPointCloud(const ros::Time& time) {
-  long stamp = asoom_->getMostRecentStampWithDepth();
+  long stamp = asoom_.getMostRecentStampWithDepth();
   if (stamp < 0) {
     // No keyframes with depth yet
     return;
   }
-  DepthCloudArray pc = asoom_->getDepthCloud(stamp);
+  DepthCloudArray pc = asoom_.getDepthCloud(stamp);
 
   sensor_msgs::PointCloud2 cloud;
   cloud.header.stamp = time;
@@ -312,6 +320,16 @@ void ASOOMWrapper::publishUTMTransform(const ros::Time& time) {
   br.sendTransform(trans);
 }
 
+void ASOOMWrapper::publishKeyframeImgs() {
+  const auto keyframes = asoom_.getNewKeyframes();
+
+  for (const auto& key : keyframes) {
+    std_msgs::Header header;
+    header.stamp.fromNSec(key.first);
+    keyframe_img_pub_.publish(cv_bridge::CvImage(header, "bgr8", key.second).toImageMsg());
+  }
+}
+
 void ASOOMWrapper::poseImgCallback(const geometry_msgs::PoseStamped::ConstPtr& pose_msg,
     const sensor_msgs::Image::ConstPtr& img_msg)
 {
@@ -320,7 +338,7 @@ void ASOOMWrapper::poseImgCallback(const geometry_msgs::PoseStamped::ConstPtr& p
   if (img_msg) {
     img = cv_bridge::toCvCopy(img_msg, sensor_msgs::image_encodings::BGR8)->image;
   }
-  asoom_->addFrame(pose_msg->header.stamp.toNSec(), img, pose);
+  asoom_.addFrame(pose_msg->header.stamp.toNSec(), img, pose);
 }
 
 void ASOOMWrapper::gpsCallback(const sensor_msgs::NavSatFix::ConstPtr& gps_msg) {
@@ -330,7 +348,7 @@ void ASOOMWrapper::gpsCallback(const sensor_msgs::NavSatFix::ConstPtr& gps_msg) 
   }
   // PGO works better with smaller numbers instead of in utm frame directly
   gps.head<2>() -= utm_origin_;
-  asoom_->addGPS(gps_msg->header.stamp.toNSec(), gps);
+  asoom_.addGPS(gps_msg->header.stamp.toNSec(), gps);
 }
 
 void ASOOMWrapper::semCallback(const sensor_msgs::Image::ConstPtr& sem_msg) {
@@ -344,7 +362,7 @@ void ASOOMWrapper::semCallback(const sensor_msgs::Image::ConstPtr& sem_msg) {
     // Gray (values are class indices)
     img = cv_bridge::toCvCopy(sem_msg, sensor_msgs::image_encodings::MONO8)->image;
   }
-  asoom_->addSemantics(sem_msg->header.stamp.toNSec(), img);
+  asoom_.addSemantics(sem_msg->header.stamp.toNSec(), img);
 }
 
 geometry_msgs::Point ASOOMWrapper::Eigen2ROS(const Eigen::Vector3d& pos) {

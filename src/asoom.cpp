@@ -88,6 +88,22 @@ grid_map_msgs::GridMap ASOOM::getMapMessage() {
   return grid_map_msgs::GridMap(grid_map_msg_.msg);
 }
 
+std::vector<std::pair<const long, const cv::Mat>> ASOOM::getNewKeyframes() {
+  std::vector<std::pair<const long, const cv::Mat>> new_keyframes;
+
+  std::shared_lock lock(keyframes_.m);
+  for (auto& key : keyframes_.frames) {
+    if (!key.second->hasRepublished()) {
+      // Technically yes, this modified key so we should use a unique_lock.
+      // However, we only read repulished_ in this thread, so it's fine
+      key.second->republish();
+      new_keyframes.push_back({key.first, key.second->getImg()});
+    }
+  }
+
+  return new_keyframes;
+}
+
 /***********************************************************
  * PoseGraph Thread
  ***********************************************************/
@@ -140,13 +156,16 @@ void ASOOM::PoseGraphThread::parseBuffer() {
     // VO Buffer
     std::scoped_lock<std::mutex> lock(asoom_->keyframe_input_.m);
 
+    Eigen::Isometry3d pg_pose;
     for (auto& frame : asoom_->keyframe_input_.buf) {
       size_t ind = pg_.addFrame(*frame);
-      if ((pg_.getPoseAtIndex(ind).translation() - last_key_pos_).head<2>().norm() > 
+      // Get back pose which has now been updated
+      pg_pose = pg_.getPoseAtIndex(ind);
+      if ((pg_pose.translation() - last_key_pos_).head<2>().norm() > 
           asoom_->params_.keyframe_dist_thresh_m && pg_.isInitialized()) {
         // Update pose from pg since it has adapted to scale and starting loc
-        frame->setPose(pg_.getPoseAtIndex(ind));
-        last_key_pos_ = frame->getPose().translation();
+        frame->setPose(pg_pose);
+        last_key_pos_ = pg_pose.translation();
 
         // We have moved far enough, insert frame
         std::unique_lock lock(asoom_->keyframes_.m);

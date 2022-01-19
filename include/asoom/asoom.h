@@ -102,6 +102,12 @@ class ASOOM {
     //! Get the last grid map
     grid_map_msgs::GridMap getMapMessage();
 
+    /*! 
+     * Get list of keyframe stamps and images that have not yet been returned via
+     * this function
+     */
+    std::vector<std::pair<const long, const cv::Mat>> getNewKeyframes();
+
   private:
     /***********************************************************
      * LOCAL VARIABLES
