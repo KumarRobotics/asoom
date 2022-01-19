@@ -11,12 +11,19 @@
     <remap from="~image" to="/asoom/img"/>
   </node>
 
+  <node pkg="erfnet_pytorch_ros" type="erfnet_ros.py" name="erfnet_ros" output="screen">
+    <param name="model_path" value="$(find erfnet_pytorch_ros)/models/model_best.pth"/>
+
+    <remap from="~image" to="/asoom/keyframe_img"/>
+    <remap from="~label" to="/asoom/sem"/>
+  </node>
+
   <node pkg="asoom" type="asoom_node" name="asoom" output="screen">
     <param name="require_imgs" value="True"/>
     <param name="use_semantics" value="True"/>
     <param name="semantic_lut_path" value="$(find asoom)/config/semantic_lut.yaml"/>
     <param name="pose_graph_fix_scale" value="False"/>
-    <param name="keyframe_dist_thresh_m" value="1"/>
+    <param name="keyframe_dist_thresh_m" value="2"/>
 
     <param name="rectifier_calib_path" value="$(find asoom)/config/grace_quarters.yaml"/>
     <remap from="~pose" to="/orbslam3_ros_node/pose"/>
