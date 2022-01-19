@@ -34,16 +34,17 @@ TEST(ASOOM_utils, test_utm) {
 
 TEST(ASOOM_utils, test_sem_color_lut) {
   SemanticColorLut lut(ros::package::getPath("asoom") + "/config/semantic_lut.yaml");  
-  auto color = SemanticColorLut::unpackColor(lut.ind2Color(0));
+  // Some unknown class
+  auto color = SemanticColorLut::unpackColor(lut.ind2Color(34));
   EXPECT_EQ(color[0], 0);
   EXPECT_EQ(color[1], 0);
   EXPECT_EQ(color[2], 0);
-  EXPECT_EQ(lut.color2Ind(SemanticColorLut::packColor(color[0], color[1], color[2])), 0);
-  color = SemanticColorLut::unpackColor(lut.ind2Color(1));
+  EXPECT_EQ(lut.color2Ind(SemanticColorLut::packColor(color[0], color[1], color[2])), 255);
+  color = SemanticColorLut::unpackColor(lut.ind2Color(0));
   EXPECT_EQ(color[0], 255);
   EXPECT_EQ(color[1], 0);
   EXPECT_EQ(color[2], 0);
-  EXPECT_EQ(lut.color2Ind(SemanticColorLut::packColor(color[0], color[1], color[2])), 1);
+  EXPECT_EQ(lut.color2Ind(SemanticColorLut::packColor(color[0], color[1], color[2])), 0);
 
   cv::Mat img = cv::Mat::zeros(1000, 1000, CV_8UC1);
   for (uint8_t i=0; i<6; i++) {
@@ -52,16 +53,17 @@ TEST(ASOOM_utils, test_sem_color_lut) {
   cv::Mat color_img;
   lut.ind2Color(img, color_img);
   EXPECT_EQ(color_img.type(), CV_8UC3);
-  EXPECT_EQ(color_img.at<cv::Vec3b>(0, 0), cv::Vec3b(0, 0, 0));
-  EXPECT_EQ(color_img.at<cv::Vec3b>(1, 0), cv::Vec3b(0, 0, 255));
-  EXPECT_EQ(color_img.at<cv::Vec3b>(4, 0), cv::Vec3b(0, 100, 0));
-  EXPECT_EQ(color_img.at<cv::Vec3b>(5, 0), cv::Vec3b(0, 0, 0));
+  // These are BGR because OpenCV
+  EXPECT_EQ(color_img.at<cv::Vec3b>(0, 0), cv::Vec3b(255, 0, 0));
+  EXPECT_EQ(color_img.at<cv::Vec3b>(1, 0), cv::Vec3b(0, 255, 0));
+  EXPECT_EQ(color_img.at<cv::Vec3b>(3, 0), cv::Vec3b(0, 100, 0));
+  EXPECT_EQ(color_img.at<cv::Vec3b>(4, 0), cv::Vec3b(0, 0, 0));
 
   // Go backwards
   lut.color2Ind(color_img, img);
   EXPECT_EQ(img.type(), CV_8UC1);
-  for (uint8_t i=0; i<5; i++) {
+  for (uint8_t i=0; i<4; i++) {
     EXPECT_EQ(img.at<uint8_t>(i, 0), i);
   }
-  EXPECT_EQ(img.at<uint8_t>(5, 0), 0);
+  EXPECT_EQ(img.at<uint8_t>(4, 0), 255);
 }

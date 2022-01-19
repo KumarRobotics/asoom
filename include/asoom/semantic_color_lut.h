@@ -22,29 +22,29 @@ class SemanticColorLut {
     inline static const std::string NO_SEM = "NO_SEM_MODE";
     SemanticColorLut(const std::string& lut_path = NO_SEM);
 
-    static inline uint32_t packColor(uint8_t r, uint8_t g, uint8_t b) {
+    static inline uint32_t packColor(uint8_t b, uint8_t g, uint8_t r) {
       return (static_cast<uint32_t>(r) << 16 | 
               static_cast<uint32_t>(g) << 8 | 
               static_cast<uint32_t>(b));
     }
 
     static inline std::array<uint8_t, 3> unpackColor(uint32_t color) {
-      return {static_cast<uint8_t>((color >> 16) & 0x0000ff),
+      return {static_cast<uint8_t>(color & 0x0000ff),
               static_cast<uint8_t>((color >> 8) & 0x0000ff),
-              static_cast<uint8_t>(color & 0x0000ff)};
+              static_cast<uint8_t>((color >> 16) & 0x0000ff)};
     }
   
     inline uint32_t ind2Color(uint8_t ind) {
       uint32_t color = 0;
-      if (ind <= ind_to_color_.size() && ind > 0) {
-        color = ind_to_color_[ind - 1];
+      if (ind < ind_to_color_.size() && ind >= 0) {
+        color = ind_to_color_[ind];
       }
       return color;
     }
     void ind2Color(const cv::Mat& ind_mat, cv::Mat& color_mat);
 
     inline uint8_t color2Ind(uint32_t color) {
-      uint8_t ind = 0;
+      uint8_t ind = 255;
       auto color_ptr = color_to_ind_.find(color);
       if (color_ptr != color_to_ind_.end()) {
         ind = color_ptr->second;

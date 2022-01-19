@@ -26,12 +26,12 @@ DepthCloudArray Keyframe::getDepthCloud() const {
       
       // The weird PCL color format
       bgr = rect_img_.at<cv::Vec3b>(y, x);
-      uint32_t rgb_packed = SemanticColorLut::packColor(bgr[2], bgr[1], bgr[0]);
+      uint32_t color_packed = SemanticColorLut::packColor(bgr[0], bgr[1], bgr[2]);
       cloud.block<3,1>(0, sparse_ind) = (trans * depth_->col(dense_ind)).cast<float>();
-      cloud(3, sparse_ind) = *reinterpret_cast<float*>(&rgb_packed);
+      cloud(3, sparse_ind) = *reinterpret_cast<float*>(&color_packed);
 
       // We pack in the class integer in the same way
-      uint8_t sem_class = 0;
+      uint8_t sem_class = 255;
       if (hasSem() && sem_img_.size() == rect_img_.size()) {
         sem_class = sem_img_.at<uint8_t>(y, x);
       }

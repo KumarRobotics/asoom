@@ -43,6 +43,8 @@ void Map::addCloud(const DepthCloudArray& cloud, const Eigen::Isometry3d& camera
   grid_map::Index ind;
   Eigen::Vector3f pt_camera_frame;
   double view_angle;
+  uint8_t sem_ind;
+  uint32_t sem_color_packed;
   for (size_t col=0; col<inds.cols(); col++) {
     ind = inds.col(col);
     if ((ind < 0).any() || (ind >= map_.getSize()).any()) {
@@ -64,9 +66,14 @@ void Map::addCloud(const DepthCloudArray& cloud, const Eigen::Isometry3d& camera
     if (view_angle < view_angle_layer(ind[0], ind[1])) {
       view_angle_layer(ind[0], ind[1]) = view_angle;
       color_layer(ind[0], ind[1]) = cloud(3, col);
-      semantics_layer(ind[0], ind[1]) = cloud(4, col);
-      uint32_t sem_color_packed = semantic_color_lut_.ind2Color(cloud(4, col));
-      semantics_viz_layer(ind[0], ind[1]) = *reinterpret_cast<float*>(&sem_color_packed);
+
+      sem_ind = cloud(4, col);
+      // Don't overwrite with unknown
+      if (sem_ind != 255) {
+        semantics_layer(ind[0], ind[1]) = sem_ind;
+        sem_color_packed = semantic_color_lut_.ind2Color(sem_ind);
+        semantics_viz_layer(ind[0], ind[1]) = *reinterpret_cast<float*>(&sem_color_packed);
+      }
     }
   }
 }

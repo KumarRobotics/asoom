@@ -13,8 +13,8 @@ SemanticColorLut::SemanticColorLut(const std::string& lut_path) {
                                       color[1].as<uint32_t>(),
                                       color[2].as<uint32_t>());
 
-      ind_to_color_.push_back(rgb_packed);
       color_to_ind_.insert({rgb_packed, ind_to_color_.size()});
+      ind_to_color_.push_back(rgb_packed);
     }
   }
 }
@@ -25,9 +25,9 @@ void SemanticColorLut::ind2Color(const cv::Mat& ind_mat, cv::Mat& color_mat) {
   using Pixel = cv::Point3_<uint8_t>;
   color_mat.forEach<Pixel>([&](Pixel& pixel, const int position[]) -> void {
     auto color = unpackColor(ind2Color(pixel.x));
-    pixel.x = color[2]; // r
+    pixel.x = color[0]; // b
     pixel.y = color[1]; // g
-    pixel.z = color[0]; // b
+    pixel.z = color[2]; // r
   });
 }
 
@@ -37,7 +37,7 @@ void SemanticColorLut::color2Ind(const cv::Mat& color_mat, cv::Mat& ind_mat) {
   using Pixel = cv::Point3_<uint8_t>;
   uint8_t ind;
   color_mat_deep.forEach<Pixel>([&](Pixel& pixel, const int position[]) -> void {
-    ind = color2Ind(SemanticColorLut::packColor(pixel.z, pixel.y, pixel.x));
+    ind = color2Ind(SemanticColorLut::packColor(pixel.x, pixel.y, pixel.z));
     pixel = {ind, ind, ind};
   });
 
