@@ -66,7 +66,7 @@ void Map::addCloud(const DepthCloudArray& cloud, const Eigen::Isometry3d& camera
     view_angle = std::abs(std::atan2(pt_camera_frame.head<2>().norm(), pt_camera_frame[2]));
     if (view_angle < view_angle_layer(ind[0], ind[1]) && 
         std::abs(elevation_layer(ind[0], ind[1]) - cloud(2, col)) < 1 &&
-        num_points_layer(ind[0], ind[1]) > 100) {
+        num_points_layer(ind[0], ind[1]) > params_.req_point_density * std::pow(params_.resolution, 2)) {
       // Update color if depth is consistent with map and if closer to image center
       view_angle_layer(ind[0], ind[1]) = view_angle;
       color_layer(ind[0], ind[1]) = cloud(3, col);

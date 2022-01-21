@@ -14,10 +14,12 @@ class Map {
     struct Params {
       double resolution; // In m/cell
       double buffer_size_m;
+      double req_point_density; // In pts/m^2
 
-      Params(double r, double bsm) : resolution(r), buffer_size_m(bsm) {}
+      Params(double r, double bsm, double rqd) : resolution(r), buffer_size_m(bsm), 
+        req_point_density(rqd) {}
 
-      Params() : Params(0.1, 50) {}
+      Params() : Params(0.5, 50, 500) {}
     };
 
     Map(const Params& params, const SemanticColorLut& lut);

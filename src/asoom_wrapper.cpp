@@ -73,6 +73,7 @@ ASOOM ASOOMWrapper::createASOOM(ros::NodeHandle& nh) {
   Map::Params map_params;
   nh.param<double>("map_resolution", map_params.resolution, 0.5);
   nh.param<double>("map_buffer_size_m", map_params.buffer_size_m, 50);
+  nh.param<double>("map_req_point_density", map_params.req_point_density, 500);
 
   if (asoom_params.use_semantics && 
       asoom_params.semantic_lut_path == SemanticColorLut::NO_SEM) 
@@ -114,6 +115,7 @@ ASOOM ASOOMWrapper::createASOOM(ros::NodeHandle& nh) {
     "[ROS] ===============================" << std::endl <<
     "[ROS] map_resolution: " << map_params.resolution << std::endl << 
     "[ROS] map_buffer_size_m: " << map_params.buffer_size_m << std::endl << 
+    "[ROS] map_req_point_density: " << map_params.req_point_density << std::endl << 
     "[ROS] ====== End Configuration ======" << "\033[0m" << std::endl;
 
   return ASOOM(asoom_params, pose_graph_params, rectifier_params, stereo_params, map_params);
