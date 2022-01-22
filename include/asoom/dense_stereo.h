@@ -14,6 +14,7 @@ class DenseStereo {
     struct Params {
       // These are the settings for sgbm
       // See https://docs.opencv.org/3.4/d2/d85/classcv_1_1StereoSGBM.html
+      bool use_sgbm;
       int min_disparity;
       int num_disparities;
       int block_size;
@@ -25,13 +26,13 @@ class DenseStereo {
       int speckle_window_size;
       int speckle_range;
 
-      Params(int md, int nd, int bs, int p1c, int p2c, int d12md, int pfc, int ur,
+      Params(bool us, int md, int nd, int bs, int p1c, int p2c, int d12md, int pfc, int ur,
           int sws, int sr) : 
-        min_disparity(md), num_disparities(nd), block_size(bs), P1_coeff(p1c), P2_coeff(p2c), 
-        disp_12_map_diff(d12md), pre_filter_cap(pfc), uniqueness_ratio(ur), 
+        use_sgbm(us), min_disparity(md), num_disparities(nd), block_size(bs), P1_coeff(p1c), 
+        P2_coeff(p2c), disp_12_map_diff(d12md), pre_filter_cap(pfc), uniqueness_ratio(ur), 
         speckle_window_size(sws), speckle_range(sr) {}
 
-      Params() : Params(1, 80, 9, 1, 3, 0, 35, 10, 100, 20) {}
+      Params() : Params(true, 1, 80, 9, 1, 3, 0, 35, 10, 100, 20) {}
     };
 
     DenseStereo(const Params& params);
@@ -68,8 +69,10 @@ class DenseStereo {
     void setIntrinsics(const Eigen::Matrix3d& K, const cv::Size& size);
 
   private:
+    Params params_;
+
     //! OpenCV stereo class
-    cv::Ptr<cv::StereoSGBM> stereo_;
+    cv::Ptr<cv::StereoMatcher> stereo_;
 
     //! Precomputed normalized points on image plane.  Speeds up depth projection
     Eigen::Array3Xd img_plane_pts_;

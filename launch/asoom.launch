@@ -19,6 +19,11 @@
   </node>
 
   <node pkg="asoom" type="asoom_node" name="asoom" output="screen">
+    <!-- Settings for adjusting perf -->
+    <param name="stereo_use_sgbm" value="False"/>
+    <param name="pose_graph_num_frames_opt" value="30"/>
+    <param name="map_thread_period_ms" value="5000"/>
+
     <param name="require_imgs" value="True"/>
     <param name="use_semantics" value="True"/>
     <param name="semantic_lut_path" value="$(find asoom)/config/semantic_lut.yaml"/>

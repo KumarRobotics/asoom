@@ -33,14 +33,15 @@ ASOOM ASOOMWrapper::createASOOM(ros::NodeHandle& nh) {
   // Parameters for PGO
   double pg_bs_p, pg_bs_r, pg_gs, pg_gsps;
   bool pg_fs;
-  int pg_nfi;
+  int pg_nfi, pg_nfo;
   nh.param<double>("pose_graph_between_sigmas_pos", pg_bs_p, 0.05);
   nh.param<double>("pose_graph_between_sigmas_rot", pg_bs_r, 0.05);
   nh.param<double>("pose_graph_gps_sigmas", pg_gs, 0.5);
   nh.param<double>("pose_graph_gps_sigma_per_sec", pg_gsps, 0.5);
   nh.param<bool>("pose_graph_fix_scale", pg_fs, false);
   nh.param<int>("pose_graph_num_frames_init", pg_nfi, 5);
-  PoseGraph::Params pose_graph_params(pg_bs_p, pg_bs_r, pg_gs, pg_gsps, pg_fs, pg_nfi);
+  nh.param<int>("pose_graph_num_frames_opt", pg_nfo, 10);
+  PoseGraph::Params pose_graph_params(pg_bs_p, pg_bs_r, pg_gs, pg_gsps, pg_fs, pg_nfi, pg_nfo);
 
   bool require_imgs;
   nh.param<bool>("require_imgs", require_imgs, true);
@@ -58,6 +59,7 @@ ASOOM ASOOMWrapper::createASOOM(ros::NodeHandle& nh) {
 
   //Parameters for Stereo
   DenseStereo::Params stereo_params;
+  nh.param<bool>("stereo_use_sgbm", stereo_params.use_sgbm, false);
   nh.param<int>("stereo_min_disparity", stereo_params.min_disparity, 1);
   nh.param<int>("stereo_num_disparities", stereo_params.num_disparities, 80);
   nh.param<int>("stereo_block_size", stereo_params.block_size, 9);
@@ -98,10 +100,12 @@ ASOOM ASOOMWrapper::createASOOM(ros::NodeHandle& nh) {
     "[ROS] pose_graph_gps_sigma_per_sec: " << pg_gsps << std::endl <<
     "[ROS] pose_graph_fix_scale: " << pg_fs << std::endl <<
     "[ROS] pose_graph_num_frames_init: " << pg_nfi << std::endl <<
+    "[ROS] pose_graph_num_frames_opt: " << pg_nfo << std::endl <<
     "[ROS] ===============================" << std::endl <<
     "[ROS] rectifier_calib_path: " << r_calib_path << std::endl <<
     "[ROS] rectifier_scale: " << r_scale << std::endl <<
     "[ROS] ===============================" << std::endl <<
+    "[ROS] stereo_use_sgbm: " << stereo_params.use_sgbm << std::endl <<
     "[ROS] stereo_min_disparity: " << stereo_params.min_disparity << std::endl <<
     "[ROS] stereo_num_disparities:" << stereo_params.num_disparities << std::endl <<
     "[ROS] stereo_block_size: " << stereo_params.block_size << std::endl <<

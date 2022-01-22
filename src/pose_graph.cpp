@@ -5,8 +5,8 @@
 #include "asoom/between_pose_scale_factor.h"
 
 PoseGraph::PoseGraph(const Params& params)
-      : size_(0), initial_pose_factor_id_(-1), gps_factor_count_(0), params_(params),
-        graph_()
+      : size_(0), last_opt_size_(0), initial_pose_factor_id_(-1), gps_factor_count_(0), 
+        params_(params), graph_()
 {
   current_opt_.insert(S(0), 1.0);
 
@@ -133,6 +133,12 @@ void PoseGraph::addGPSFactor(const gtsam::Key& key,
 }
 
 void PoseGraph::update() {
+  if (last_opt_size_ + params_.num_frames_opt > size_ && getScale() > 0) {
+    // Haven't gotten enough new frames to bother running new opt
+    return;
+  }
+  last_opt_size_ = size_;
+
   gtsam::LevenbergMarquardtParams opt_params;
   gtsam::LevenbergMarquardtOptimizer opt(graph_, current_opt_, opt_params);
   current_opt_ = opt.optimize();

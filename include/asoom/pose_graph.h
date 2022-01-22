@@ -39,19 +39,23 @@ class PoseGraph {
       //! Number of frames of GPS and VO needed to initialize
       int num_frames_init;
 
+      //! Number of new frames before optimizing
+      int num_frames_opt;
+
       //! Full constructor
       Params(const Eigen::Vector6d& bs, const Eigen::Vector3d& gs, 
-          const Eigen::Vector3d& gsps = Eigen::Vector3d::Zero(), bool fs = false, int nfi = 5)
+          const Eigen::Vector3d& gsps = Eigen::Vector3d::Zero(), bool fs = false, int nfi = 5,
+          int nfo = 0)
         : between_sigmas(bs), gps_sigmas(gs), gps_sigma_per_sec(gsps), fix_scale(fs),
-          num_frames_init(nfi) {}
+          num_frames_init(nfi), num_frames_opt(nfo) {}
 
       //! The "Everything is independent and isotropic" constructor
       Params(double bs_p, double bs_r, double gs, 
-          double gsps = 0, bool fs = false, int nfi = 5) 
+          double gsps = 0, bool fs = false, int nfi = 5, int nfo = 0) 
         : between_sigmas((Eigen::Vector6d() << bs_r, bs_r, bs_r, bs_p, bs_p, bs_p).finished()),
           gps_sigmas(Eigen::Vector3d::Constant(gs)), 
           gps_sigma_per_sec(Eigen::Vector3d::Constant(gsps)), fix_scale(fs), 
-          num_frames_init(nfi) {}
+          num_frames_init(nfi), num_frames_opt(nfo) {}
     };
 
     /*!
@@ -188,6 +192,9 @@ class PoseGraph {
 
     //! Number of frames in graph
     size_t size_;
+
+    //! Number of frames in graph at time of last opt
+    size_t last_opt_size_;
 
     //! Number of GPS factors in graph
     size_t gps_factor_count_;
