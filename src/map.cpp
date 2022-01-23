@@ -119,3 +119,30 @@ grid_map_msgs::GridMap Map::exportROSMsg() {
 const grid_map::GridMap &Map::getMap() const {
   return map_;
 }
+
+Eigen::Vector2f Map::getMapSemImg(cv::Mat &sem, cv::Mat &sem_viz) const {
+  sem = cv::Mat(map_.getSize()(0), map_.getSize()(1), CV_8UC1, cv::Scalar(255));
+  sem_viz = cv::Mat(map_.getSize()(0), map_.getSize()(1), CV_8UC3, cv::Scalar(255,255,255));
+  // The default toImage does not properly handle color, so we loop manually
+  // This code is modified from that
+  const grid_map::Matrix& sem_layer_viz = map_["semantics_viz"];
+  const grid_map::Matrix& sem_layer = map_["semantics"];
+
+  std::array<uint8_t, 3> color_vec;
+  for (grid_map::GridMapIterator it(map_); !it.isPastEnd(); ++it) {
+    const grid_map::Index index(*it);
+    const float& value = sem_layer_viz(index(0), index(1));
+
+    if (std::isfinite(value)) {
+      const grid_map::Index image_index(it.getUnwrappedIndex());
+      sem.at<uint8_t>(image_index(0), image_index(1)) = sem_layer(index(0), index(1));
+
+      color_vec = SemanticColorLut::unpackColor(*reinterpret_cast<const uint32_t*>(&value));
+      sem_viz.at<cv::Vec<uint8_t, 3>>(image_index(0), image_index(1)) = 
+        cv::Vec<uint8_t, 3>(color_vec[0], color_vec[1], color_vec[2]);
+    }
+  }
+
+  // grid_map::Position is Eigen::Vector2d
+  return map_.getPosition().cast<float>();
+}

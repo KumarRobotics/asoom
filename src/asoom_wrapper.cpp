@@ -153,6 +153,10 @@ void ASOOMWrapper::initialize() {
   recent_cloud_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("recent_cloud", 1);
   map_pub_ = nh_.advertise<grid_map_msgs::GridMap>("map", 1);
 
+  map_sem_img_pub_ = nh_.advertise<sensor_msgs::Image>("map_sem_img", 1);
+  map_sem_img_viz_pub_ = nh_.advertise<sensor_msgs::Image>("map_sem_img_viz", 1);
+  map_sem_img_center_pub_ = nh_.advertise<geometry_msgs::PointStamped>("map_sem_img_center", 1);
+
   output_timer_ = nh_.createTimer(ros::Duration(1.0), &ASOOMWrapper::outputCallback, this);
 }
 
@@ -187,6 +191,7 @@ void ASOOMWrapper::outputCallback(const ros::TimerEvent& event) {
   publishPoseGraphViz(time);
   publishRecentPointCloud(time);
   publishUTMTransform(time);
+  publishMap(time);
   publishKeyframeImgs();
   map_pub_.publish(asoom_.getMapMessage());
   auto end_t = high_resolution_clock::now();
@@ -324,6 +329,21 @@ void ASOOMWrapper::publishUTMTransform(const ros::Time& time) {
   trans.transform.translation.z = 0;
 
   br.sendTransform(trans);
+}
+
+void ASOOMWrapper::publishMap(const ros::Time& time) {
+  map_pub_.publish(asoom_.getMapMessage());
+ 
+  cv::Mat sem, sem_viz;
+  Eigen::Vector2f center = asoom_.getSemMapImages(sem, sem_viz);
+
+  std_msgs::Header header;
+  header.stamp = time;
+  sensor_msgs::ImagePtr msg = cv_bridge::CvImage(header, "mono8", sem).toImageMsg();
+  sensor_msgs::ImagePtr viz_msg = cv_bridge::CvImage(header, "bgr8", sem_viz).toImageMsg();
+
+  map_sem_img_pub_.publish(msg);
+  map_sem_img_viz_pub_.publish(viz_msg);
 }
 
 void ASOOMWrapper::publishKeyframeImgs() {

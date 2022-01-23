@@ -102,6 +102,14 @@ class ASOOM {
     //! Get the last grid map
     grid_map_msgs::GridMap getMapMessage();
 
+    /*!
+     * Export map images
+     * @param sem Image of semantic layer (grayscale class indices)
+     * @param sem_viz Visualization of semantic layer (BGR color)
+     * @return Map center
+     */
+    Eigen::Vector2f getSemMapImages(cv::Mat& sem, cv::Mat& sem_viz);
+
     /*! 
      * Get list of keyframe stamps and images that have not yet been returned via
      * this function
@@ -163,6 +171,9 @@ class ASOOM {
     struct MapMessage {
       std::mutex m;
       grid_map_msgs::GridMap msg;
+      cv::Mat sem_img;
+      cv::Mat sem_img_viz;
+      Eigen::Vector2f sem_img_center;
     } grid_map_msg_;
 
     //! Set to true to kill all running threads
