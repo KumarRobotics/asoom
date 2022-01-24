@@ -342,6 +342,14 @@ void ASOOMWrapper::publishMap(const ros::Time& time) {
   sensor_msgs::ImagePtr msg = cv_bridge::CvImage(header, "mono8", sem).toImageMsg();
   sensor_msgs::ImagePtr viz_msg = cv_bridge::CvImage(header, "bgr8", sem_viz).toImageMsg();
 
+  geometry_msgs::PointStamped map_center_msg;
+  map_center_msg.header = header;
+  map_center_msg.header.frame_id = "world";
+  map_center_msg.point.x = center.x();
+  map_center_msg.point.y = center.y();
+  map_center_msg.point.z = 0;
+
+  map_sem_img_center_pub_.publish(map_center_msg);
   map_sem_img_pub_.publish(msg);
   map_sem_img_viz_pub_.publish(viz_msg);
 }
