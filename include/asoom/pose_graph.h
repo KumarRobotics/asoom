@@ -63,7 +63,8 @@ class PoseGraph {
      *
      * @param params Parameters for the pose graph
      */
-    PoseGraph(const Params& params);
+    PoseGraph(const Params& params, 
+        const Eigen::Isometry3d& initial_pose = Eigen::Isometry3d::Identity());
 
     /*!
      * Create new image frame in the pose graph
@@ -167,6 +168,8 @@ class PoseGraph {
      ***********************************************************/
 
     const Params params_;
+
+    const Eigen::Isometry3d initial_pose_;
     
     /***********************************************************
      * LOCAL VARIABLES

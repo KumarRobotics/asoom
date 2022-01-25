@@ -42,6 +42,19 @@ Rectifier::Rectifier(const Params& params) {
   output_size_.width = input_size_.width * params.scale;
   output_size_.height = input_size_.height * params.scale;
 
+  T_body_cam_ = Eigen::Isometry3d::Identity();
+  if (calib["cam0"]["T_body_cam"]) {
+    const auto trans = calib["cam0"]["T_body_cam"];
+    T_body_cam_.translate(Eigen::Vector3d{trans["pos"][0].as<float>(), 
+                                          trans["pos"][1].as<float>(), 
+                                          trans["pos"][2].as<float>()});
+    // Eigen uses wxyz, store as xyzw in file
+    T_body_cam_.rotate(Eigen::Quaterniond{trans["rot"][3].as<float>(),
+                                          trans["rot"][0].as<float>(), 
+                                          trans["rot"][1].as<float>(), 
+                                          trans["rot"][2].as<float>()});
+  }
+
   // Now figure out what K should be for rectified images
   if (is_fisheye_) {
     cv::fisheye::estimateNewCameraMatrixForUndistortRectify(input_K_, input_dist_, 
@@ -56,13 +69,16 @@ std::pair<Eigen::Isometry3d, Eigen::Isometry3d> Rectifier::genRectifyMaps(
     const Keyframe& key1, const Keyframe& key2, cv::Mat& rect1_map1, cv::Mat& rect1_map2,
     cv::Mat& rect2_map1, cv::Mat& rect2_map2)
 {
+  // Poses in the graph are of the body, convert to of the camera
+  Eigen::Isometry3d T_world_cam1 = key1.getPose() * T_body_cam_;
+  Eigen::Isometry3d T_world_cam2 = key2.getPose() * T_body_cam_;
+
   // Based on "A compact algorithm for rectification of stereo pairs",
   // Fusiello, Trucco, Verri, Machine Vision and Applications 2000
-  
-  Eigen::Matrix3d R1 = key1.getPose().rotation();
-  Eigen::Matrix3d R2 = key2.getPose().rotation();
-  Eigen::Vector3d T1 = key1.getPose().translation();
-  Eigen::Vector3d T2 = key2.getPose().translation();
+  Eigen::Matrix3d R1 = T_world_cam1.rotation();
+  Eigen::Matrix3d R2 = T_world_cam2.rotation();
+  Eigen::Vector3d T1 = T_world_cam1.translation();
+  Eigen::Vector3d T2 = T_world_cam2.translation();
 
   Eigen::Matrix3d R = Eigen::Matrix3d::Zero();
   R.row(0) = (T2 - T1).normalized();
@@ -89,8 +105,8 @@ std::pair<Eigen::Isometry3d, Eigen::Isometry3d> Rectifier::genRectifyMaps(
         CV_16SC2, rect2_map1, rect2_map2);
   }
 
-  return std::make_pair(Eigen::Isometry3d(R1diff), 
-                        Eigen::Isometry3d(R2diff));
+  return std::make_pair(T_body_cam_ * Eigen::Isometry3d(R1diff), 
+                        T_body_cam_ * Eigen::Isometry3d(R2diff));
 }
 
 void Rectifier::rectifyImage(const cv::Mat& input, const cv::Mat& map1, const cv::Mat& map2,

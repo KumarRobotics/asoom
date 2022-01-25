@@ -6,12 +6,28 @@
 
 ASOOM::ASOOM(const Params& asoom_params, const PoseGraph::Params& pg_params,
     const Rectifier::Params& rect_params, const DenseStereo::Params& stereo_params,
-    const Map::Params& map_params) 
-  : pose_graph_thread_(PoseGraphThread(this, pg_params)),
-    stereo_thread_(StereoThread(this, rect_params, stereo_params)),
-    semantic_color_lut_(asoom_params.semantic_lut_path),
-    map_thread_(MapThread(this, map_params, semantic_color_lut_)),
-    params_(asoom_params) {}
+    const Map::Params& map_params) : params_(asoom_params) 
+{
+  DenseStereo stereo(stereo_params);
+  PoseGraph pose_graph(pg_params);
+  semantic_color_lut_ = SemanticColorLut(asoom_params.semantic_lut_path);
+  T_body_cam_ = Eigen::Isometry3d::Identity();
+
+  // Startup all of the threads
+  try {
+    Rectifier rectifier(rect_params);
+    T_body_cam_ = rectifier.getBodyCamPose();
+    stereo_thread_ = std::thread(StereoThread(this, rectifier, stereo));
+  } catch (const std::exception& ex) {
+    // This usually happens when there is a yaml reading error
+    std::cout << "\033[31m" << "[ERROR] Cannot create Rectifier, no stereo: " << ex.what() 
+      << "\033[0m" << std::endl;
+  }
+  Eigen::Isometry3d init_pose = Eigen::Isometry3d::Identity();
+  init_pose.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitY()));
+  pose_graph_thread_ = std::thread(PoseGraphThread(this, {pg_params, init_pose * T_body_cam_}));
+  map_thread_ = std::thread(MapThread(this, {map_params, semantic_color_lut_}));
+}
 
 ASOOM::~ASOOM() {
   // Set kill flag, then just wait for threads to complete
@@ -54,7 +70,7 @@ std::vector<Eigen::Isometry3d> ASOOM::getGraph() {
   {
     std::shared_lock lock(keyframes_.m);
     for (const auto& frame : keyframes_.frames) {
-      frame_vec.push_back(frame.second->getPose());
+      frame_vec.push_back(frame.second->getPose() * T_body_cam_);
     }
   }
 
@@ -453,6 +469,8 @@ void ASOOM::MapThread::resizeMap(std::vector<Keyframe>& frames) {
 
 void ASOOM::MapThread::updateMap(std::vector<Keyframe>& frames) {
   for (auto& frame : frames) {
-    map_.addCloud(frame.getDepthCloud(), frame.getPose(), frame.getStamp());
+    // Important to use getRectPose here, since any cam/body transform is included
+    // inside here
+    map_.addCloud(frame.getDepthCloud(), frame.getRectPose(), frame.getStamp());
   }
 }

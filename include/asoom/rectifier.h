@@ -4,6 +4,7 @@
 #include <Eigen/Dense>
 #include <opencv2/core/eigen.hpp>
 #include <yaml-cpp/yaml.h>
+#include <Eigen/Core>
 
 #include "asoom/keyframe.h"
 
@@ -68,6 +69,10 @@ class Rectifier {
      */
     Eigen::Matrix3d getOutputK() const;
 
+    Eigen::Isometry3d getBodyCamPose() const {
+      return T_body_cam_;
+    }
+
     cv::Size getOutputSize() const {
       return output_size_;
     }
@@ -77,6 +82,9 @@ class Rectifier {
     }
 
   private:
+    //! Pose of camera in body frame
+    Eigen::Isometry3d T_body_cam_;
+
     //! Intrinsics and dist coeff for input camera
     cv::Mat input_K_, input_dist_;
     cv::Size input_size_;

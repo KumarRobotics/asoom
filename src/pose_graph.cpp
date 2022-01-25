@@ -4,9 +4,9 @@
 #include "asoom/pose_graph.h"
 #include "asoom/between_pose_scale_factor.h"
 
-PoseGraph::PoseGraph(const Params& params)
+PoseGraph::PoseGraph(const Params& params, const Eigen::Isometry3d& initial_pose)
       : size_(0), last_opt_size_(0), initial_pose_factor_id_(-1), gps_factor_count_(0), 
-        params_(params), graph_()
+        initial_pose_(initial_pose), params_(params), graph_()
 {
   current_opt_.insert(S(0), 1.0);
 
@@ -33,11 +33,9 @@ size_t PoseGraph::addFrame(long stamp, const Eigen::Isometry3d& pose,
   } else {
     // Create prior on first pose to remove free degree of freedom until GPS installed
     // Start downward-facing
-    Eigen::Isometry3d init_pose = Eigen::Isometry3d::Identity();
-    init_pose.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitY()));
     initial_pose_factor_id_ = graph_.size();
     graph_.emplace_shared<gtsam::PriorFactor<gtsam::Pose3>>(P(size_), 
-        Eigen2GTSAM(init_pose),
+        Eigen2GTSAM(initial_pose_),
         gtsam::noiseModel::Constrained::All(6));
     current_opt_.insert(P(size_), Eigen2GTSAM(Eigen::Isometry3d::Identity()));
   }

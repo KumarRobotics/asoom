@@ -179,6 +179,8 @@ class ASOOM {
     //! Set to true to kill all running threads
     std::atomic<bool> exit_threads_flag_ = false;
 
+    Eigen::Isometry3d T_body_cam_;
+
     /***********************************************************
      * THREAD FUNCTORS
      ***********************************************************/
@@ -190,7 +192,7 @@ class ASOOM {
         // We have to pass a pointer to parent back to access local members
         // If the pointer is deleted then the class holding the thread is also
         // dead, so this seems safe, if rather ugly
-        PoseGraphThread(ASOOM *a, const PoseGraph::Params& p) : asoom_(a), pg_(p) {}
+        PoseGraphThread(ASOOM *a, const PoseGraph& p) : asoom_(a), pg_(p) {}
 
         bool operator()();
       private:
@@ -214,13 +216,8 @@ class ASOOM {
     std::thread stereo_thread_;
     class StereoThread {
       public:
-        StereoThread(ASOOM *a, const Rectifier::Params& rp, const DenseStereo::Params& dsp) try : 
-          asoom_(a), rectifier_(rp), dense_stereo_(dsp) {
-        } catch (const std::exception& ex) {
-          // This usually happens when there is a yaml reading error
-          std::cout << "\033[31m" << "[ERROR] Cannot create StereoThread: " << ex.what() 
-            << "\033[0m" << std::endl;
-        }
+        StereoThread(ASOOM *a, const Rectifier& r, const DenseStereo& ds): 
+          asoom_(a), rectifier_(r), dense_stereo_(ds) {}
 
         bool operator()();
       private:
@@ -246,8 +243,8 @@ class ASOOM {
     std::thread map_thread_;
     class MapThread {
       public:
-        MapThread(ASOOM *a, const Map::Params& p, const SemanticColorLut& lut) : 
-          asoom_(a), map_(p, lut) {}
+        MapThread(ASOOM *a, const Map& m) : 
+          asoom_(a), map_(m) {}
 
         bool operator()();
       private:

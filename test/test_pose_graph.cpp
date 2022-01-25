@@ -2,7 +2,10 @@
 #include "asoom/pose_graph.h"
 
 TEST(ASOOM_pose_graph_test, test_two_nodes) {
-  auto pg = std::make_unique<PoseGraph>(PoseGraph::Params(0.1, 0.1, 0.1));
+  Eigen::Isometry3d init_pose = Eigen::Isometry3d::Identity();
+  init_pose.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitY()));
+
+  auto pg = std::make_unique<PoseGraph>(PoseGraph::Params(0.1, 0.1, 0.1), init_pose);
   ASSERT_TRUE(pg);
 
   Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
