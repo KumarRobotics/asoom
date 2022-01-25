@@ -25,7 +25,9 @@ ASOOM::ASOOM(const Params& asoom_params, const PoseGraph::Params& pg_params,
   }
   Eigen::Isometry3d init_pose = Eigen::Isometry3d::Identity();
   init_pose.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitY()));
-  pose_graph_thread_ = std::thread(PoseGraphThread(this, {pg_params, init_pose * T_body_cam_}));
+  // Pose of body such that camera is pointing down
+  init_pose = init_pose * T_body_cam_.inverse();
+  pose_graph_thread_ = std::thread(PoseGraphThread(this, {pg_params, init_pose}));
   map_thread_ = std::thread(MapThread(this, {map_params, semantic_color_lut_}));
 }
 
