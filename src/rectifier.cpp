@@ -4,6 +4,8 @@
 #include "asoom/rectifier.h"
 
 Rectifier::Rectifier(const Params& params) {
+  T_body_cam_ = Eigen::Isometry3d::Identity();
+
   if (params.calib_path == NO_IMGS) {
     // Empty calib path, don't do anything
     return;
@@ -42,7 +44,6 @@ Rectifier::Rectifier(const Params& params) {
   output_size_.width = input_size_.width * params.scale;
   output_size_.height = input_size_.height * params.scale;
 
-  T_body_cam_ = Eigen::Isometry3d::Identity();
   if (calib["cam0"]["T_body_cam"]) {
     const auto trans = calib["cam0"]["T_body_cam"];
     T_body_cam_.translate(Eigen::Vector3d{trans["pos"][0].as<float>(), 

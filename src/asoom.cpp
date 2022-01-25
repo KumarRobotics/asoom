@@ -10,7 +10,15 @@ ASOOM::ASOOM(const Params& asoom_params, const PoseGraph::Params& pg_params,
 {
   DenseStereo stereo(stereo_params);
   PoseGraph pose_graph(pg_params);
-  semantic_color_lut_ = SemanticColorLut(asoom_params.semantic_lut_path);
+  try {
+    semantic_color_lut_ = SemanticColorLut(asoom_params.semantic_lut_path);
+  } catch (const std::exception& ex) {
+    // This usually happens when there is a yaml reading error
+    std::cout << "\033[31m" << "[ERROR] Cannot create semantic LUT: " << ex.what() 
+      << "\033[0m" << std::endl;
+    // Create placeholder
+    semantic_color_lut_ = SemanticColorLut(SemanticColorLut::NO_SEM);
+  }
   T_body_cam_ = Eigen::Isometry3d::Identity();
 
   // Startup all of the threads
@@ -18,6 +26,8 @@ ASOOM::ASOOM(const Params& asoom_params, const PoseGraph::Params& pg_params,
     Rectifier rectifier(rect_params);
     T_body_cam_ = rectifier.getBodyCamPose();
     stereo_thread_ = std::thread(StereoThread(this, rectifier, stereo));
+    // No point in running mapping if there is no stereo
+    map_thread_ = std::thread(MapThread(this, {map_params, semantic_color_lut_}));
   } catch (const std::exception& ex) {
     // This usually happens when there is a yaml reading error
     std::cout << "\033[31m" << "[ERROR] Cannot create Rectifier, no stereo: " << ex.what() 
@@ -25,8 +35,9 @@ ASOOM::ASOOM(const Params& asoom_params, const PoseGraph::Params& pg_params,
   }
   Eigen::Isometry3d init_pose = Eigen::Isometry3d::Identity();
   init_pose.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitY()));
-  pose_graph_thread_ = std::thread(PoseGraphThread(this, {pg_params, init_pose * T_body_cam_}));
-  map_thread_ = std::thread(MapThread(this, {map_params, semantic_color_lut_}));
+  // Pose of body such that camera is pointing down
+  init_pose = init_pose * T_body_cam_.inverse();
+  pose_graph_thread_ = std::thread(PoseGraphThread(this, {pg_params, init_pose}));
 }
 
 ASOOM::~ASOOM() {
