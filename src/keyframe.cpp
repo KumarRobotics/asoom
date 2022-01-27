@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include "asoom/keyframe.h"
 #include "asoom/semantic_color_lut.h"
 
@@ -52,4 +53,33 @@ bool Keyframe::needsMapUpdate() const {
     return true;
   }
   return false;
+}
+
+void Keyframe::saveImageBinary(const cv::Mat& img) {
+}
+
+void Keyframe::saveToDisk() {
+  // This is pretty ugly.  We are going to literally stream the data to disk.
+  // This is arguably rather unsafe, but it's very fast, because we don't have
+  // to deal with formatting the data when we are reading/writing.
+  
+  std::ostringstream name; 
+  name << "frame_" << stamp_ << ".bin";
+  std::ofstream outfile(name.str(), std::ofstream::binary);
+
+  {
+    // Write header
+    int rows = img_.size().height;
+    outfile.write(reinterpret_cast<char *>(&rows), sizeof(rows));
+    int cols = img_.size().width;
+    outfile.write(reinterpret_cast<char *>(&cols), sizeof(cols));
+    int type = img_.type();
+    outfile.write(reinterpret_cast<char *>(&type), sizeof(type));
+
+    size_t size = img_.total() * img_.elemSize();
+    outfile.write(reinterpret_cast<char *>(img_.data), size);
+  }
+}
+
+void Keyframe::loadFromDisk() {
 }

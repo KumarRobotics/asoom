@@ -95,6 +95,12 @@ class Keyframe {
       map_pose_ = pose_;
     }
 
+    void saveToDisk();
+
+    void loadFromDisk();
+
+    static void saveImageBinary(const cv::Mat& img);
+
   private:
     /***********************************************************
      * LOCAL VARIABLES
@@ -132,6 +138,9 @@ class Keyframe {
 
     //! True if the keyframe image has been republished
     bool republished_ = false;
+
+    //! True if data is not currently in memory but must be loaded from disk
+    bool on_disk_ = false;
 };
 
 // Using pointers here should make sort faster
