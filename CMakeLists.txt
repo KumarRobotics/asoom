@@ -228,6 +228,7 @@ catkin_add_gtest(${PROJECT_NAME}-test
   test/test_rectifier.cpp
   test/test_dense_stereo.cpp
   test/test_map.cpp
+  test/test_keyframe.cpp
 )
 if(TARGET ${PROJECT_NAME}-test)
   target_link_libraries(${PROJECT_NAME}-test 

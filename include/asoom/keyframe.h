@@ -71,6 +71,7 @@ class Keyframe {
       if (depth_) {
         have_depth_ = true;
       }
+      on_disk_ = false;
     }
 
     inline void setDepth(const Keyframe& key) {
@@ -80,6 +81,7 @@ class Keyframe {
     inline void setSem(const cv::Mat& sem) {
       if (sem.type() == CV_8UC1) {
         sem_img_ = sem;
+        on_disk_ = false;
       }
     }
 
@@ -95,11 +97,19 @@ class Keyframe {
       map_pose_ = pose_;
     }
 
+    //! Saves data to disk, then wipes data
     void saveToDisk();
 
-    void loadFromDisk();
+    //! Returns true if load successful
+    bool loadFromDisk();
 
-    static void saveImageBinary(const cv::Mat& img);
+    static void saveDataBinary(const cv::Mat& img, std::ofstream& outfile);
+    static void saveDataBinary(const std::shared_ptr<Eigen::Array3Xd>& arr, 
+        std::ofstream& outfile);
+
+    static void readDataBinary(std::ifstream& infile, cv::Mat& img);
+    static void readDataBinary(std::ifstream& infile, 
+        std::shared_ptr<Eigen::Array3Xd>& arr);
 
   private:
     /***********************************************************
@@ -126,7 +136,7 @@ class Keyframe {
     // in keyframes_ directly once they are set.
 
     //! Image associated with keyframe
-    const cv::Mat img_;
+    cv::Mat img_;
     cv::Mat rect_img_;
 
     //! Semantic image, later can be overwritten with rect image
@@ -139,8 +149,11 @@ class Keyframe {
     //! True if the keyframe image has been republished
     bool republished_ = false;
 
-    //! True if data is not currently in memory but must be loaded from disk
+    //! True if data on disk is up to date
     bool on_disk_ = false;
+
+    //! True if data currently in memory
+    bool in_mem_ = true;
 };
 
 // Using pointers here should make sort faster

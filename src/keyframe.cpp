@@ -55,7 +55,67 @@ bool Keyframe::needsMapUpdate() const {
   return false;
 }
 
-void Keyframe::saveImageBinary(const cv::Mat& img) {
+void Keyframe::saveDataBinary(const cv::Mat& img, std::ofstream& outfile) {
+  // Write header
+  int rows = img.size().height;
+  outfile.write(reinterpret_cast<const char *>(&rows), sizeof(rows));
+  int cols = img.size().width;
+  outfile.write(reinterpret_cast<const char *>(&cols), sizeof(cols));
+  int type = img.type();
+  outfile.write(reinterpret_cast<const char *>(&type), sizeof(type));
+
+  size_t size = img.total() * img.elemSize();
+  outfile.write(reinterpret_cast<const char *>(img.data), size);
+}
+
+void Keyframe::saveDataBinary(const std::shared_ptr<Eigen::Array3Xd>& arr, 
+    std::ofstream& outfile) 
+{
+  // Write header
+  int rows = 0;
+  int cols = 0;
+  if (arr) {
+    rows = arr->rows();
+    cols = arr->cols();
+  }
+  int type = 1; // somewhat arbitrary to indicate double
+
+  outfile.write(reinterpret_cast<const char *>(&rows), sizeof(rows));
+  outfile.write(reinterpret_cast<const char *>(&cols), sizeof(cols));
+  outfile.write(reinterpret_cast<const char *>(&type), sizeof(type));
+
+  if (arr) {
+    size_t size = arr->size() * sizeof(double);
+    outfile.write(reinterpret_cast<const char *>(arr->data()), size);
+  }
+}
+
+void Keyframe::readDataBinary(std::ifstream& infile, cv::Mat& img) {
+  // Read header
+  int rows, cols, type;
+  infile.read(reinterpret_cast<char *>(&rows), sizeof(rows));
+  infile.read(reinterpret_cast<char *>(&cols), sizeof(cols));
+  infile.read(reinterpret_cast<char *>(&type), sizeof(type));
+
+  img = cv::Mat(rows, cols, type);
+  size_t size = img.total() * img.elemSize();
+  infile.read(reinterpret_cast<char *>(img.data), size);
+}
+
+void Keyframe::readDataBinary(std::ifstream& infile, 
+    std::shared_ptr<Eigen::Array3Xd>& arr) 
+{
+  // Read header
+  int rows, cols, type;
+  infile.read(reinterpret_cast<char *>(&rows), sizeof(rows));
+  infile.read(reinterpret_cast<char *>(&cols), sizeof(cols));
+  infile.read(reinterpret_cast<char *>(&type), sizeof(type));
+
+  if (rows > 0 && cols > 0) {
+    arr = std::make_shared<Eigen::Array3Xd>(rows, cols);
+    size_t size = arr->size() * sizeof(double);
+    infile.read(reinterpret_cast<char *>(arr->data()), size);
+  }
 }
 
 void Keyframe::saveToDisk() {
@@ -63,23 +123,48 @@ void Keyframe::saveToDisk() {
   // This is arguably rather unsafe, but it's very fast, because we don't have
   // to deal with formatting the data when we are reading/writing.
   
-  std::ostringstream name; 
-  name << "frame_" << stamp_ << ".bin";
-  std::ofstream outfile(name.str(), std::ofstream::binary);
+  if (!on_disk_) {
+    std::ostringstream name; 
+    name << getenv("HOME") << "/.ros/frame_" << stamp_ << ".bin";
+    std::ofstream outfile(name.str(), std::ios::binary | std::ios::trunc);
 
-  {
-    // Write header
-    int rows = img_.size().height;
-    outfile.write(reinterpret_cast<char *>(&rows), sizeof(rows));
-    int cols = img_.size().width;
-    outfile.write(reinterpret_cast<char *>(&cols), sizeof(cols));
-    int type = img_.type();
-    outfile.write(reinterpret_cast<char *>(&type), sizeof(type));
+    saveDataBinary(img_, outfile);
+    saveDataBinary(rect_img_, outfile);
+    saveDataBinary(sem_img_, outfile);
+    saveDataBinary(depth_, outfile);
 
-    size_t size = img_.total() * img_.elemSize();
-    outfile.write(reinterpret_cast<char *>(img_.data), size);
+    outfile.close();
   }
+
+  img_.release();
+  rect_img_.release();
+  sem_img_.release();
+  depth_.reset();
+  on_disk_ = true;
+  in_mem_ = false;
 }
 
-void Keyframe::loadFromDisk() {
+bool Keyframe::loadFromDisk() {
+  if (in_mem_) {
+    return true;
+  }
+  if (!on_disk_) {
+    return false;
+  }
+
+  std::ostringstream name; 
+  name << getenv("HOME") << "/.ros/frame_" << stamp_ << ".bin";
+  std::ifstream infile(name.str(), std::ios::binary);
+
+  if (!infile.is_open()) {
+    return false;
+  }
+  
+  readDataBinary(infile, img_);
+  readDataBinary(infile, rect_img_);
+  readDataBinary(infile, sem_img_);
+  readDataBinary(infile, depth_);
+
+  in_mem_ = true;
+  return on_disk_;
 }
