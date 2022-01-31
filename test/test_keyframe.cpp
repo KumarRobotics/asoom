@@ -54,4 +54,16 @@ TEST(ASOOM_keyframe_test, test_save_load_full) {
   ASSERT_EQ(cv::sum(cv::abs(img - k.getImg()))[1], 0);
   ASSERT_EQ(cv::sum(cv::abs(img - k.getImg()))[2], 0);
   ASSERT_EQ(initial_size, k.getDepthCloud().size());
+ 
+  // Check that loading if already loaded basically instant
+  start_t = high_resolution_clock::now();
+  ASSERT_TRUE(k.loadFromDisk());
+  end_t = high_resolution_clock::now();
+  ASSERT_TRUE(duration_cast<microseconds>(end_t - start_t).count() < 10);
+
+  // Check that saving if already saved basically instant
+  start_t = high_resolution_clock::now();
+  k.saveToDisk();
+  end_t = high_resolution_clock::now();
+  ASSERT_TRUE(duration_cast<microseconds>(end_t - start_t).count() < 10);
 }

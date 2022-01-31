@@ -103,14 +103,6 @@ class Keyframe {
     //! Returns true if load successful
     bool loadFromDisk();
 
-    static void saveDataBinary(const cv::Mat& img, std::ofstream& outfile);
-    static void saveDataBinary(const std::shared_ptr<Eigen::Array3Xd>& arr, 
-        std::ofstream& outfile);
-
-    static void readDataBinary(std::ifstream& infile, cv::Mat& img);
-    static void readDataBinary(std::ifstream& infile, 
-        std::shared_ptr<Eigen::Array3Xd>& arr);
-
   private:
     /***********************************************************
      * LOCAL VARIABLES
@@ -154,6 +146,18 @@ class Keyframe {
 
     //! True if data currently in memory
     bool in_mem_ = true;
+
+    /***********************************************************
+     * LOCAL STATIC FUNCTIONS
+     ***********************************************************/
+
+    static void saveDataBinary(const cv::Mat& img, std::ofstream& outfile);
+    static void saveDataBinary(const std::shared_ptr<Eigen::Array3Xd>& arr, 
+        std::ofstream& outfile);
+
+    static void readDataBinary(std::ifstream& infile, cv::Mat& img);
+    static void readDataBinary(std::ifstream& infile, 
+        std::shared_ptr<Eigen::Array3Xd>& arr);
 };
 
 // Using pointers here should make sort faster

@@ -254,6 +254,8 @@ class ASOOM {
 
         void updateMap(std::vector<Keyframe>& frames);
 
+        void saveKeyframes(const std::vector<Keyframe>& frames);
+
         Map map_;
 
         //! Pointer back to parent

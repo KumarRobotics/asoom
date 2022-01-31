@@ -89,8 +89,10 @@ std::vector<Eigen::Isometry3d> ASOOM::getGraph() {
 }
 
 DepthCloudArray ASOOM::getDepthCloud(long stamp) {
-  std::shared_lock lock(keyframes_.m);
-  return keyframes_.frames.at(stamp)->getDepthCloud();
+  std::unique_lock lock(keyframes_.m);
+  auto key = keyframes_.frames.at(stamp).get();
+  key->loadFromDisk();
+  return key->getDepthCloud();
 }
 
 long ASOOM::getMostRecentStamp() const {
@@ -339,10 +341,15 @@ std::vector<Keyframe> ASOOM::StereoThread::getKeyframesToCompute() {
 
 void ASOOM::StereoThread::computeDepths(std::vector<Keyframe>& frames) {
   // Use c ptr because we don't want the pointer to try to manage the underlying memory
-  const Keyframe *last_frame = nullptr;
+  Keyframe *last_frame = nullptr;
   cv::Mat i1m1, i1m2, i2m1, i2m2, rect1, rect2, disp, sem_rect;
   for (auto& frame : frames) {
     if (last_frame != nullptr && (frame.hasSem() || !use_semantics_)) {
+      // Possible that one of frames already is in map but being used to compute the
+      // depth of the other.  If so, data might be cached.
+      frame.loadFromDisk();
+      last_frame->loadFromDisk();
+
       auto new_dposes = rectifier_.genRectifyMaps(frame, *last_frame, i1m1, i1m2, i2m1, i2m2);
       // Rectify images
       Rectifier::rectifyImage(frame.getImg(), i1m1, i1m2, rect1);
@@ -401,6 +408,8 @@ bool ASOOM::MapThread::operator()() {
           asoom_->grid_map_msg_.sem_img, asoom_->grid_map_msg_.sem_img_viz);
     }
     auto export_ros_t = high_resolution_clock::now();
+    saveKeyframes(keyframes_to_compute);
+    auto save_keyframes_t = high_resolution_clock::now();
     
     std::cout << "\033[35m" << "[Map] ========== Map Thread =========" << std::endl << 
       "[StT] Buffering Keyframes: " << 
@@ -411,6 +420,8 @@ bool ASOOM::MapThread::operator()() {
       duration_cast<microseconds>(update_map_t - resize_map_t).count() << "us" << std::endl <<
       "[StT] Exporting ROS Message: " << 
       duration_cast<microseconds>(export_ros_t - update_map_t).count() << "us" << std::endl <<
+      "[StT] Saving Keyframes: " << 
+      duration_cast<microseconds>(save_keyframes_t - export_ros_t).count() << "us" << std::endl <<
       "[StT] Total Keyframes Updated: " << keyframes_to_compute.size() << std::endl <<
       "\033[0m" << std::flush;
 
@@ -479,9 +490,24 @@ void ASOOM::MapThread::resizeMap(std::vector<Keyframe>& frames) {
 }
 
 void ASOOM::MapThread::updateMap(std::vector<Keyframe>& frames) {
-  for (auto& frame : frames) {
+  for (auto frame_it = frames.begin(); frame_it != frames.end(); frame_it++) {
+    // This doesn't do anything if the frame is already in mem
+    frame_it->loadFromDisk();
     // Important to use getRectPose here, since any cam/body transform is included
     // inside here
-    map_.addCloud(frame.getDepthCloud(), frame.getRectPose(), frame.getStamp());
+    map_.addCloud(frame_it->getDepthCloud(), frame_it->getRectPose(), frame_it->getStamp());
+    // Do this to clear memory
+    // Note that because we are working on a copy of keyframes_, this doesn't
+    // permanently save memory
+    frame_it->saveToDisk();
+  }
+}
+
+void ASOOM::MapThread::saveKeyframes(const std::vector<Keyframe>& frames) {
+  std::unique_lock lock(asoom_->keyframes_.m);
+  for (const auto& frame : asoom_->keyframes_.frames) {
+    if (frame.second->inMap()) {
+      frame.second->saveToDisk();
+    }
   }
 }
