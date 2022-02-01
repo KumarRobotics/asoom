@@ -59,6 +59,14 @@ class Keyframe {
       republished_ = true;
     }
 
+    inline void setOptimized() {
+      is_optimized_ = true;
+    }
+
+    inline bool isOptimized() {
+      return is_optimized_;
+    }
+
     inline void setPose(const Eigen::Isometry3d& p) {
       pose_ = p;
     }
@@ -146,6 +154,9 @@ class Keyframe {
 
     //! True if data currently in memory
     bool in_mem_ = true;
+
+    //! True if the pose has been optimized by PGO
+    bool is_optimized_ = false;
 
     /***********************************************************
      * LOCAL STATIC FUNCTIONS
