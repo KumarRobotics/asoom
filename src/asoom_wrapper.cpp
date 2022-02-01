@@ -17,6 +17,7 @@ ASOOMWrapper::ASOOMWrapper(ros::NodeHandle& nh)
 
   nh_.param<bool>("require_imgs", require_imgs_, true);
   nh_.param<bool>("use_semantics", use_semantics_, false);
+  nh_.param<bool>("use_gps_stamp", use_gps_stamp_, true);
 }
 
 ASOOM ASOOMWrapper::createASOOM(ros::NodeHandle& nh) {
@@ -382,7 +383,12 @@ void ASOOMWrapper::gpsCallback(const sensor_msgs::NavSatFix::ConstPtr& gps_msg) 
   }
   // PGO works better with smaller numbers instead of in utm frame directly
   gps.head<2>() -= utm_origin_;
-  asoom_.addGPS(gps_msg->header.stamp.toNSec(), gps);
+
+  auto stamp = gps_msg->header.stamp;
+  if (!use_gps_stamp_) {
+    stamp = ros::Time::now();
+  }
+  asoom_.addGPS(stamp.toNSec(), gps);
 }
 
 void ASOOMWrapper::semCallback(const sensor_msgs::Image::ConstPtr& sem_msg) {

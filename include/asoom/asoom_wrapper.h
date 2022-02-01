@@ -76,6 +76,9 @@ class ASOOMWrapper {
     //! If true, sub to semantic image topic
     bool use_semantics_;
 
+    //! If true, use stamp from GPS.  If false, restamp with ROS time
+    bool use_gps_stamp_;
+
     Eigen::Vector2d utm_origin_;
 
     //! ROS Pubs and subs
