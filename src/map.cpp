@@ -116,10 +116,6 @@ grid_map_msgs::GridMap Map::exportROSMsg() {
   return msg;
 }
 
-const grid_map::GridMap &Map::getMap() const {
-  return map_;
-}
-
 Eigen::Vector2f Map::getMapSemImg(cv::Mat &sem, cv::Mat &sem_viz) const {
   sem = cv::Mat(map_.getSize()(0), map_.getSize()(1), CV_8UC1, cv::Scalar(255));
   sem_viz = cv::Mat(map_.getSize()(0), map_.getSize()(1), CV_8UC3, cv::Scalar(255,255,255));

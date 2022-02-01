@@ -87,7 +87,7 @@ class Keyframe {
 
     DepthCloudArray getDepthCloud() const;
 
-    bool needsMapUpdate() const;
+    bool needsMapUpdate(float delta_d = 1, float delta_theta = 5*M_PI/180) const;
 
     inline bool inMap() const {
       return !map_pose_.matrix().isIdentity(1e-5);

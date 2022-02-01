@@ -443,8 +443,10 @@ std::vector<Keyframe> ASOOM::MapThread::getKeyframesToCompute() {
 
   std::vector<Keyframe> keyframes_to_compute;
   bool rebuild_map = false;
+  const Map::Params& params = map_.getParams();
   for (const auto& frame : asoom_->keyframes_.frames) {
-    if (frame.second->needsMapUpdate() && frame.second->hasDepth()) {
+    if (frame.second->needsMapUpdate(params.dist_for_rebuild, params.ang_for_rebuild) && 
+        frame.second->hasDepth()) {
       if (frame.second->inMap()) {
         // If frame already in map but needs updating, we have to wipe and start over
         rebuild_map = true;

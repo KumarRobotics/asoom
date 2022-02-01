@@ -32,6 +32,7 @@ ASOOM ASOOMWrapper::createASOOM(ros::NodeHandle& nh) {
       SemanticColorLut::NO_SEM);
 
   // Parameters for PGO
+  // These are doubles because we use Isometry3d everywhere for poses
   double pg_bs_p, pg_bs_r, pg_gs, pg_gsps;
   bool pg_fs;
   int pg_nfi, pg_nfo;
@@ -44,8 +45,9 @@ ASOOM ASOOMWrapper::createASOOM(ros::NodeHandle& nh) {
   nh.param<int>("pose_graph_num_frames_opt", pg_nfo, 10);
   PoseGraph::Params pose_graph_params(pg_bs_p, pg_bs_r, pg_gs, pg_gsps, pg_fs, pg_nfi, pg_nfo);
 
-  bool require_imgs;
+  bool require_imgs, use_gps_stamp;
   nh.param<bool>("require_imgs", require_imgs, true);
+  nh.param<bool>("use_gps_stamp", use_gps_stamp, true);
 
   // Parameters for Rectifier
   std::string r_calib_path;
@@ -74,9 +76,11 @@ ASOOM ASOOMWrapper::createASOOM(ros::NodeHandle& nh) {
 
   // Parameters for Map
   Map::Params map_params;
-  nh.param<double>("map_resolution", map_params.resolution, 0.5);
-  nh.param<double>("map_buffer_size_m", map_params.buffer_size_m, 50);
-  nh.param<double>("map_req_point_density", map_params.req_point_density, 500);
+  nh.param<float>("map_resolution", map_params.resolution, 0.5);
+  nh.param<float>("map_buffer_size_m", map_params.buffer_size_m, 50);
+  nh.param<float>("map_req_point_density", map_params.req_point_density, 500);
+  nh.param<float>("map_dist_for_rebuild", map_params.dist_for_rebuild, 1);
+  nh.param<float>("map_ang_for_rebuild", map_params.ang_for_rebuild, 5*M_PI/180);
 
   if (asoom_params.use_semantics && 
       asoom_params.semantic_lut_path == SemanticColorLut::NO_SEM) 
@@ -88,6 +92,7 @@ ASOOM ASOOMWrapper::createASOOM(ros::NodeHandle& nh) {
 
   std::cout << "\033[32m" << "[ROS] ======== Configuration ========" << std::endl <<
     "[ROS] require_imgs: " << require_imgs << std::endl <<
+    "[ROS] use_gps_stamp: " << use_gps_stamp << std::endl <<
     "[ROS] pgo_thread_period_ms: " << asoom_params.pgo_thread_period_ms << std::endl <<
     "[ROS] stereo_thread_period_ms: " << asoom_params.stereo_thread_period_ms << std::endl <<
     "[ROS] map_thread_period_ms: " << asoom_params.map_thread_period_ms << std::endl <<
@@ -121,6 +126,8 @@ ASOOM ASOOMWrapper::createASOOM(ros::NodeHandle& nh) {
     "[ROS] map_resolution: " << map_params.resolution << std::endl << 
     "[ROS] map_buffer_size_m: " << map_params.buffer_size_m << std::endl << 
     "[ROS] map_req_point_density: " << map_params.req_point_density << std::endl << 
+    "[ROS] map_dist_for_rebuild: " << map_params.dist_for_rebuild << std::endl << 
+    "[ROS] map_ang_for_rebuild: " << map_params.ang_for_rebuild << std::endl << 
     "[ROS] ====== End Configuration ======" << "\033[0m" << std::endl;
 
   return ASOOM(asoom_params, pose_graph_params, rectifier_params, stereo_params, map_params);

@@ -12,14 +12,18 @@
 class Map {
   public: 
     struct Params {
-      double resolution; // In m/cell
-      double buffer_size_m;
-      double req_point_density; // In pts/m^2
+      float resolution; // In m/cell
+      float buffer_size_m;
+      float req_point_density; // In pts/m^2
 
-      Params(double r, double bsm, double rqd) : resolution(r), buffer_size_m(bsm), 
-        req_point_density(rqd) {}
+      float dist_for_rebuild; // In m
+      float ang_for_rebuild; // In rad
 
-      Params() : Params(0.5, 50, 500) {}
+      Params(float r, float bsm, float rqd, float dfr, float afr) : 
+        resolution(r), buffer_size_m(bsm), req_point_density(rqd), dist_for_rebuild(dfr),
+        ang_for_rebuild(afr) {}
+
+      Params() : Params(0.5, 50, 500, 1, 5*M_PI/180) {}
     };
 
     Map(const Params& params, const SemanticColorLut& lut);
@@ -47,7 +51,14 @@ class Map {
     grid_map_msgs::GridMap exportROSMsg();
 
     //! This is really just for test purposes
-    const grid_map::GridMap &getMap() const;
+    inline const grid_map::GridMap& getMap() const {
+      return map_;
+    }
+
+    //! Simple getter for parameters
+    inline const Params& getParams() const {
+      return params_;
+    }
 
     /*!
      * Export map images
@@ -55,7 +66,7 @@ class Map {
      * @param sem_viz Visualization of semantic layer (BGR color)
      * @return Map center
      */
-    Eigen::Vector2f getMapSemImg(cv::Mat &sem, cv::Mat &sem_viz) const;
+    Eigen::Vector2f getMapSemImg(cv::Mat& sem, cv::Mat& sem_viz) const;
 
   private:
     const Params params_;

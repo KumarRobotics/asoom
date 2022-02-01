@@ -59,11 +59,14 @@ TEST(ASOOM_keyframe_test, test_save_load_full) {
   start_t = high_resolution_clock::now();
   ASSERT_TRUE(k.loadFromDisk());
   end_t = high_resolution_clock::now();
+  std::cout << "Loading already loaded: " << duration_cast<microseconds>(end_t - start_t).count() << "us" << std::endl;
   ASSERT_TRUE(duration_cast<microseconds>(end_t - start_t).count() < 10);
 
   // Check that saving if already saved basically instant
   start_t = high_resolution_clock::now();
+  // Already saved, so time here is time releasing memory
   k.saveToDisk();
   end_t = high_resolution_clock::now();
-  ASSERT_TRUE(duration_cast<microseconds>(end_t - start_t).count() < 10);
+  std::cout << "Saving already saved: " << duration_cast<microseconds>(end_t - start_t).count() << "us" << std::endl;
+  ASSERT_TRUE(duration_cast<microseconds>(end_t - start_t).count() < 1000);
 }

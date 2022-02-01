@@ -46,10 +46,10 @@ DepthCloudArray Keyframe::getDepthCloud() const {
   return cloud;
 }
 
-bool Keyframe::needsMapUpdate() const {
+bool Keyframe::needsMapUpdate(float delta_d, float delta_theta) const {
   Eigen::Isometry3d diff = pose_.inverse() * map_pose_;
-  if (diff.translation().norm() > 1 || 
-      Eigen::AngleAxisd(diff.rotation()).angle() > 5*M_PI/180) {
+  if (diff.translation().norm() > delta_d || 
+      Eigen::AngleAxisd(diff.rotation()).angle() > delta_theta) {
     return true;
   }
   return false;
