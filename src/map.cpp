@@ -12,7 +12,7 @@ Map::Map(const Params& params, const SemanticColorLut& lut) :
       "num_points"});
   map_.setBasicLayers({"elevation", "color"});
   // Reset layers to the appropriate values
-  map_.setFrameId("world");
+  map_.setFrameId("map");
   // Init with buffer on all sides of (0, 0)
   map_.setGeometry(grid_map::Length(params_.buffer_size_m, params_.buffer_size_m)*2, 
       params_.resolution, grid_map::Position(0, 0));

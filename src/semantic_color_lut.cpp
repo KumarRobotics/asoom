@@ -35,9 +35,8 @@ void SemanticColorLut::color2Ind(const cv::Mat& color_mat, cv::Mat& ind_mat) {
   cv::Mat color_mat_deep = color_mat.clone();
 
   using Pixel = cv::Point3_<uint8_t>;
-  uint8_t ind;
   color_mat_deep.forEach<Pixel>([&](Pixel& pixel, const int position[]) -> void {
-    ind = color2Ind(SemanticColorLut::packColor(pixel.x, pixel.y, pixel.z));
+    uint8_t ind = color2Ind(SemanticColorLut::packColor(pixel.x, pixel.y, pixel.z));
     pixel = {ind, ind, ind};
   });
 

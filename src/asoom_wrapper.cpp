@@ -213,7 +213,7 @@ void ASOOMWrapper::publishPoseGraphViz(const ros::Time& time) {
   visualization_msgs::MarkerArray marker_array;
   visualization_msgs::Marker traj_marker, cam_marker;
 
-  traj_marker.header.frame_id = "world";
+  traj_marker.header.frame_id = "map";
   traj_marker.header.stamp = time;
   traj_marker.ns = "trajectory";
   traj_marker.id = 0;
@@ -271,7 +271,7 @@ void ASOOMWrapper::publishRecentPointCloud(const ros::Time& time) {
 
   sensor_msgs::PointCloud2 cloud;
   cloud.header.stamp = time;
-  cloud.header.frame_id = "world";
+  cloud.header.frame_id = "map";
   cloud.height = 1;
   cloud.width = pc.cols();
 
@@ -325,7 +325,7 @@ void ASOOMWrapper::publishUTMTransform(const ros::Time& time) {
   geometry_msgs::TransformStamped trans;
 
   trans.header.stamp = time;
-  trans.header.frame_id = "world";
+  trans.header.frame_id = "map";
   trans.child_frame_id = "utm";
   trans.transform.rotation.x = 0;
   trans.transform.rotation.y = 0;
@@ -352,7 +352,7 @@ void ASOOMWrapper::publishMap(const ros::Time& time) {
 
   geometry_msgs::PointStamped map_center_msg;
   map_center_msg.header = header;
-  map_center_msg.header.frame_id = "world";
+  map_center_msg.header.frame_id = "map";
   map_center_msg.point.x = center.x();
   map_center_msg.point.y = center.y();
   map_center_msg.point.z = 0;
