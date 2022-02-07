@@ -62,7 +62,7 @@ class Rectifier {
      * beacuse we need to also apply the same map to the semantic layer
      */
     static void rectifyImage(const cv::Mat& input, const cv::Mat& map1, const cv::Mat& map2, 
-        cv::Mat& output);
+        cv::Mat& output, bool is_sem=false);
 
     /*!
      * @return Instrinsic K matrix for rectified images

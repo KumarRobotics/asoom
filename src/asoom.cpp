@@ -356,7 +356,7 @@ void ASOOM::StereoThread::computeDepths(std::vector<Keyframe>& frames) {
       Rectifier::rectifyImage(frame.getImg(), i1m1, i1m2, rect1);
       Rectifier::rectifyImage(last_frame->getImg(), i2m1, i2m2, rect2);
       if (use_semantics_) {
-        Rectifier::rectifyImage(frame.getSem(), i1m1, i1m2, sem_rect);
+        Rectifier::rectifyImage(frame.getSem(), i1m1, i1m2, sem_rect, true);
         frame.setSem(sem_rect.clone());
       }
 

@@ -111,9 +111,13 @@ std::pair<Eigen::Isometry3d, Eigen::Isometry3d> Rectifier::genRectifyMaps(
 }
 
 void Rectifier::rectifyImage(const cv::Mat& input, const cv::Mat& map1, const cv::Mat& map2,
-    cv::Mat& output)
+    cv::Mat& output, bool is_sem)
 {
-  cv::remap(input, output, map1, map2, cv::INTER_LINEAR);
+  if (is_sem) {
+    cv::remap(input, output, map1, map2, cv::INTER_NEAREST);
+  } else {
+    cv::remap(input, output, map1, map2, cv::INTER_LINEAR);
+  }
 }
 
 Eigen::Matrix3d Rectifier::getOutputK() const {
