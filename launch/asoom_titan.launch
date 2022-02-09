@@ -5,7 +5,7 @@
 
   <node pkg="orbslam3_ros" type="orbslam3_ros_node" name="orbslam3_ros_node" output="screen">
     <param name="vocab_path" value="/home/dcist/Repos/ORB_SLAM3/Vocabulary/ORBvoc.txt"/>
-    <param name="settings_path" value="$(find orbslam3_ros)/config/titan.yaml"/>
+    <param name="settings_path" value="$(find orbslam3_ros)/config/titan_wide.yaml"/>
     <param name="show_viz" value="False"/>
 
     <remap from="~image" to="/ovc/rgb/image_color"/>
@@ -33,7 +33,7 @@
     <param name="map_dist_for_rebuild" value="2"/>
     <param name="map_ang_for_rebuild" value="0.1"/>
 
-    <param name="rectifier_calib_path" value="$(find asoom)/config/titan.yaml"/>
+    <param name="rectifier_calib_path" value="$(find asoom)/config/titan_wide.yaml"/>
     <remap from="~pose" to="/orbslam3_ros_node/pose"/>
     <remap from="~gps" to="/ublox/fix"/>
     <remap from="~img" to="/ovc/rgb/image_color"/>
