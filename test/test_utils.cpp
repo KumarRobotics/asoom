@@ -57,13 +57,14 @@ TEST(ASOOM_utils, test_sem_color_lut) {
   EXPECT_EQ(color_img.at<cv::Vec3b>(0, 0), cv::Vec3b(255, 0, 0));
   EXPECT_EQ(color_img.at<cv::Vec3b>(1, 0), cv::Vec3b(0, 255, 0));
   EXPECT_EQ(color_img.at<cv::Vec3b>(3, 0), cv::Vec3b(0, 100, 0));
-  EXPECT_EQ(color_img.at<cv::Vec3b>(4, 0), cv::Vec3b(0, 0, 0));
+  EXPECT_EQ(color_img.at<cv::Vec3b>(4, 0), cv::Vec3b(255, 255, 0));
+  EXPECT_EQ(color_img.at<cv::Vec3b>(5, 0), cv::Vec3b(0, 0, 0));
 
   // Go backwards
   lut.color2Ind(color_img, img);
   EXPECT_EQ(img.type(), CV_8UC1);
-  for (uint8_t i=0; i<4; i++) {
+  for (uint8_t i=0; i<5; i++) {
     EXPECT_EQ(img.at<uint8_t>(i, 0), i);
   }
-  EXPECT_EQ(img.at<uint8_t>(4, 0), 255);
+  EXPECT_EQ(img.at<uint8_t>(5, 0), 255);
 }

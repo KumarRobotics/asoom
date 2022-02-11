@@ -44,7 +44,7 @@ class Keyframe {
     }
 
     inline bool hasSem() const {
-      return !sem_img_.empty();
+      return have_sem_;
     }
 
     inline const cv::Mat& getSem() const {
@@ -89,6 +89,7 @@ class Keyframe {
     inline void setSem(const cv::Mat& sem) {
       if (sem.type() == CV_8UC1) {
         sem_img_ = sem;
+        have_sem_ = true;
         on_disk_ = false;
       }
     }
@@ -142,7 +143,9 @@ class Keyframe {
     //! Semantic image, later can be overwritten with rect image
     cv::Mat sem_img_;
 
+    // These are separate flags so when we cache to disk, still true or false
     bool have_depth_ = false;
+    bool have_sem_ = false;
     //! Depth cloud associated with keyframe for the same image, stored row-major
     std::shared_ptr<Eigen::Array3Xd> depth_;
 

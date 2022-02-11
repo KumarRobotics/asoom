@@ -317,15 +317,16 @@ std::vector<Keyframe> ASOOM::StereoThread::getKeyframesToCompute() {
   std::vector<Keyframe> keyframes_to_compute;
   // Pointer to keyframes managed by unique_ptr
   const Keyframe* last_keyframe = nullptr;
+  long last_stamp = -1;
   for (const auto& frame : asoom_->keyframes_.frames) {
     // If using semantics, then require having semantics
     if (!frame.second->hasDepth() && 
         (frame.second->hasSem() || !use_semantics_)) 
     {
       if (last_keyframe) {
-        if (last_keyframe->hasDepth()) {
-          // If the previous keyframe has depth then it has not already been added
-          // to keyframes_to_compute and is needed to compute the depth for the next frame
+        if (last_stamp != last_keyframe->getStamp()) {
+          // If last stamp not last_keyframe, then last_keyframe is not in 
+          // keyframes_to_compute.  Add so we have stereo pair
           keyframes_to_compute.push_back(*last_keyframe);
         }
       }
@@ -333,6 +334,7 @@ std::vector<Keyframe> ASOOM::StereoThread::getKeyframesToCompute() {
       // Notably the image copies (cv::Mat) are not deep.  Makes this more efficient,
       // but need to be careful for thread safety
       keyframes_to_compute.push_back(*frame.second);
+      last_stamp = frame.first;
     }
     last_keyframe = frame.second.get();
   }
@@ -345,7 +347,7 @@ void ASOOM::StereoThread::computeDepths(std::vector<Keyframe>& frames) {
   Keyframe *last_frame = nullptr;
   cv::Mat i1m1, i1m2, i2m1, i2m2, rect1, rect2, disp, sem_rect;
   for (auto& frame : frames) {
-    if (last_frame != nullptr && (frame.hasSem() || !use_semantics_)) {
+    if (!frame.hasDepth() && last_frame != nullptr && (frame.hasSem() || !use_semantics_)) {
       // Possible that one of frames already is in map but being used to compute the
       // depth of the other.  If so, data might be cached.
       frame.loadFromDisk();
@@ -510,8 +512,20 @@ void ASOOM::MapThread::updateMap(std::vector<Keyframe>& frames) {
 
 void ASOOM::MapThread::saveKeyframes(const std::vector<Keyframe>& frames) {
   std::unique_lock lock(asoom_->keyframes_.m);
+  // Find stamp of most recent frame added to map
+  long last_frame_in_map = -1;
   for (const auto& frame : asoom_->keyframes_.frames) {
     if (frame.second->inMap()) {
+      if (last_frame_in_map < frame.first) {
+        last_frame_in_map = frame.first;
+      }
+    }
+  }
+
+  // Save all frames before then to disk
+  // Unlikely we will need to add them
+  for (const auto& frame : asoom_->keyframes_.frames) {
+    if (frame.first < last_frame_in_map) {
       frame.second->saveToDisk();
     }
   }
