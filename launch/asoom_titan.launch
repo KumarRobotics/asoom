@@ -12,7 +12,7 @@
   </node>
 
   <node pkg="erfnet_pytorch_ros" type="erfnet_ros.py" name="erfnet_ros" output="screen">
-    <param name="model_path" value="$(find erfnet_pytorch_ros)/models/model_best.pth"/>
+    <param name="model_path" value="$(find erfnet_pytorch_ros)/models/model_generic.pth"/>
 
     <remap from="~image" to="/asoom/keyframe_img"/>
     <remap from="~label" to="/asoom/sem"/>

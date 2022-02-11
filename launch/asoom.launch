@@ -5,14 +5,15 @@
 
   <node pkg="orbslam3_ros" type="orbslam3_ros_node" name="orbslam3_ros_node" output="screen">
     <param name="vocab_path" value="/home/ian/Repos/ORB_SLAM3/Vocabulary/ORBvoc.txt"/>
-    <param name="settings_path" value="$(find orbslam3_ros)/config/GQ.yaml"/>
+    <param name="settings_path" value="$(find orbslam3_ros)/config/titan_wide.yaml"/>
     <param name="show_viz" value="False"/>
 
     <remap from="~image" to="/asoom/img"/>
   </node>
 
   <node pkg="erfnet_pytorch_ros" type="erfnet_ros.py" name="erfnet_ros" output="screen">
-    <param name="model_path" value="$(find erfnet_pytorch_ros)/models/model_best.pth"/>
+    <param name="model_path" value="$(find erfnet_pytorch_ros)/models/model_generic.pth"/>
+    <param name="gpu" value="True"/>
 
     <remap from="~image" to="/asoom/keyframe_img"/>
     <remap from="~label" to="/asoom/sem"/>
@@ -26,11 +27,12 @@
 
     <param name="require_imgs" value="True"/>
     <param name="use_semantics" value="True"/>
+    <param name="use_gps_stamp" value="False"/>
     <param name="semantic_lut_path" value="$(find asoom)/config/semantic_lut.yaml"/>
     <param name="pose_graph_fix_scale" value="False"/>
     <param name="keyframe_dist_thresh_m" value="2"/>
 
-    <param name="rectifier_calib_path" value="$(find asoom)/config/grace_quarters.yaml"/>
+    <param name="rectifier_calib_path" value="$(find asoom)/config/titan_wide.yaml"/>
     <remap from="~pose" to="/orbslam3_ros_node/pose"/>
     <remap from="~gps" to="/ublox/fix"/>
     <!--param name="rectifier_calib_path" value="$(find asoom)/config/aerial_pennov.yaml"/>
