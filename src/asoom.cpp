@@ -527,6 +527,8 @@ void ASOOM::MapThread::saveKeyframes(const std::vector<Keyframe>& frames) {
   for (const auto& frame : asoom_->keyframes_.frames) {
     if (frame.first < last_frame_in_map) {
       frame.second->saveToDisk();
+    } else {
+      break;
     }
   }
 }
