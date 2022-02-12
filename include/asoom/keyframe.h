@@ -20,58 +20,70 @@ using DepthCloudArray = Eigen::Array5Xf;
 class Keyframe {
   public:
     Keyframe(long stamp, cv::Mat img, const Eigen::Isometry3d& pose) 
-      : stamp_(stamp), img_(img), pose_(pose) {}
+      : stamp_(stamp), img_(img), pose_(pose), odom_pose_(pose) {}
 
     // Setters and getters
-    inline long getStamp() const {
+    long getStamp() const {
       return stamp_;
     }
 
-    inline Eigen::Isometry3d getPose() const {
+    float getScale() const {
+      return scale_;
+    }
+
+    Eigen::Isometry3d getPose() const {
       return pose_;
     }
 
-    inline Eigen::Isometry3d getRectPose() const {
+    Eigen::Isometry3d getRectPose() const {
       return pose_ * rect_dpose_;
     }
 
-    inline cv::Mat getImg() const {
+    Eigen::Isometry3d getOdomPose() const {
+      return odom_pose_;
+    }
+
+    const cv::Mat& getImg() const {
       return img_;
     }
 
-    inline bool hasDepth() const {
+    bool hasDepth() const {
       return have_depth_;
     }
 
-    inline bool hasSem() const {
+    bool hasSem() const {
       return have_sem_;
     }
 
-    inline const cv::Mat& getSem() const {
+    const cv::Mat& getSem() const {
       return sem_img_;
     }
 
-    inline bool hasRepublished() const {
+    bool hasRepublished() const {
       return republished_;
     }
 
-    inline void republish() {
+    void republish() {
       republished_ = true;
     }
 
-    inline void setOptimized() {
+    void setOptimized() {
       is_optimized_ = true;
     }
 
-    inline bool isOptimized() {
+    bool isOptimized() {
       return is_optimized_;
     }
 
-    inline void setPose(const Eigen::Isometry3d& p) {
+    void setScale(float s) {
+      scale_ = s;
+    }
+
+    void setPose(const Eigen::Isometry3d& p) {
       pose_ = p;
     }
 
-    inline void setDepth(const Eigen::Isometry3d& dp, const cv::Mat& rect_img,
+    void setDepth(const Eigen::Isometry3d& dp, const cv::Mat& rect_img,
         const std::shared_ptr<Eigen::Array3Xd>& depth) {
       rect_dpose_ = dp;
       rect_img_ = rect_img;
@@ -82,11 +94,11 @@ class Keyframe {
       on_disk_ = false;
     }
 
-    inline void setDepth(const Keyframe& key) {
+    void setDepth(const Keyframe& key) {
       setDepth(key.rect_dpose_, key.rect_img_, key.depth_);
     }
 
-    inline void setSem(const cv::Mat& sem) {
+    void setSem(const cv::Mat& sem) {
       if (sem.type() == CV_8UC1) {
         sem_img_ = sem;
         have_sem_ = true;
@@ -98,11 +110,11 @@ class Keyframe {
 
     bool needsMapUpdate(float delta_d = 1, float delta_theta = 5*M_PI/180) const;
 
-    inline bool inMap() const {
+    bool inMap() const {
       return !map_pose_.matrix().isIdentity(1e-5);
     }
 
-    inline void updateMapPose() {
+    void updateMapPose() {
       map_pose_ = pose_;
     }
 
@@ -118,10 +130,14 @@ class Keyframe {
      ***********************************************************/
 
     //! Timestamp in nsec from epoch
-    const long stamp_;
+    long stamp_;
 
     //! Current global pose estimation
     Eigen::Isometry3d pose_;
+    // Pose estimation before optimization.  Keep track for stereo purposes, since
+    // when PGO permutes the image alignment for stereo is not as good
+    Eigen::Isometry3d odom_pose_;
+    float scale_;
 
     /*! 
      * The pose used by the mapper.  If pose_ changes from this significantly, we

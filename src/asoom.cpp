@@ -202,6 +202,7 @@ void ASOOM::PoseGraphThread::parseBuffer() {
           asoom_->params_.keyframe_dist_thresh_m && pg_.isInitialized()) {
         // Update pose from pg since it has adapted to scale and starting loc
         frame->setPose(pg_pose);
+        frame->setScale(pg_.getScale());
         last_key_pos_ = pg_pose.translation();
 
         // We have moved far enough, insert frame
@@ -366,11 +367,11 @@ void ASOOM::StereoThread::computeDepths(std::vector<Keyframe>& frames) {
       dense_stereo_.computeDisp(rect1, rect2, disp);
 
       double baseline = 
-        (frame.getPose().translation() - last_frame->getPose().translation()).norm();
+        (frame.getOdomPose().translation() - last_frame->getOdomPose().translation()).norm();
       // Important to clone rectified image here, since otherwise on the next image when we
       // update rect1 it will change, since a Mat is a pointer internally
       frame.setDepth(new_dposes.first, rect1.clone(), 
-          dense_stereo_.projectDepth(disp, baseline));
+          dense_stereo_.projectDepth(disp, baseline*frame.getScale()));
     }
     last_frame = &frame;
   }

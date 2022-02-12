@@ -71,8 +71,8 @@ std::pair<Eigen::Isometry3d, Eigen::Isometry3d> Rectifier::genRectifyMaps(
     cv::Mat& rect2_map1, cv::Mat& rect2_map2)
 {
   // Poses in the graph are of the body, convert to of the camera
-  Eigen::Isometry3d T_world_cam1 = key1.getPose() * T_body_cam_;
-  Eigen::Isometry3d T_world_cam2 = key2.getPose() * T_body_cam_;
+  Eigen::Isometry3d T_world_cam1 = key1.getOdomPose() * T_body_cam_;
+  Eigen::Isometry3d T_world_cam2 = key2.getOdomPose() * T_body_cam_;
 
   // Based on "A compact algorithm for rectification of stereo pairs",
   // Fusiello, Trucco, Verri, Machine Vision and Applications 2000

@@ -9,7 +9,7 @@
  * @param gps_latlong Point in (lat, long) in degrees
  * @param zone Set equal to UTM zone number, negative for southern version
  */
-Eigen::Vector2d LatLong2UTM(const Eigen::Vector2d& gps_latlong, int& zone) {
+inline Eigen::Vector2d LatLong2UTM(const Eigen::Vector2d& gps_latlong, int& zone) {
   constexpr double n = 0.0016792203863837047; // f/(2-f)
   constexpr double A = 6367449.145823415;
   const Eigen::Vector3d alpha(
