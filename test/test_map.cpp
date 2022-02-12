@@ -2,7 +2,7 @@
 #include "asoom/map.h"
 
 TEST(ASOOM_map_test, test_map) {
-  Map map(Map::Params(0.1, 25, 0, 1, 5*M_PI/180), SemanticColorLut());
+  Map map(Map::Params(10, 25, 0, 1, 5*M_PI/180), SemanticColorLut());
 
   // Check initialization
   EXPECT_FLOAT_EQ(map.getMap().atPosition("view_angle", grid_map::Position(0, 0)), M_PI/2);

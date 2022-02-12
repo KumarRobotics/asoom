@@ -76,7 +76,7 @@ ASOOM ASOOMWrapper::createASOOM(ros::NodeHandle& nh) {
 
   // Parameters for Map
   Map::Params map_params;
-  nh.param<float>("map_resolution", map_params.resolution, 0.5);
+  nh.param<float>("map_resolution", map_params.resolution, 2);
   nh.param<float>("map_buffer_size_m", map_params.buffer_size_m, 50);
   nh.param<float>("map_req_point_density", map_params.req_point_density, 500);
   nh.param<float>("map_dist_for_rebuild", map_params.dist_for_rebuild, 1);

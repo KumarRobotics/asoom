@@ -12,7 +12,7 @@
 class Map {
   public: 
     struct Params {
-      float resolution; // In m/cell
+      float resolution; // In cell/m (consistent with top_down_render)
       float buffer_size_m;
       float req_point_density; // In pts/m^2
 
@@ -23,7 +23,7 @@ class Map {
         resolution(r), buffer_size_m(bsm), req_point_density(rqd), dist_for_rebuild(dfr),
         ang_for_rebuild(afr) {}
 
-      Params() : Params(0.5, 50, 500, 1, 5*M_PI/180) {}
+      Params() : Params(2, 50, 500, 1, 5*M_PI/180) {}
     };
 
     Map(const Params& params, const SemanticColorLut& lut);
