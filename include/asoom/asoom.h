@@ -99,6 +99,9 @@ class ASOOM {
      */
     long getMostRecentStampWithDepth();
 
+    //! @return Pose of the most recent frame
+    Eigen::Isometry3d getPose(long stamp);
+
     //! Get the last grid map
     grid_map_msgs::GridMap getMapMessage();
 
@@ -122,7 +125,7 @@ class ASOOM {
      ***********************************************************/
 
     //! Most recent timestamp for data added to graph
-    long most_recent_stamp_ = 0;
+    long most_recent_stamp_ = -1;
 
     //! Parameters for high level system
     const Params params_;

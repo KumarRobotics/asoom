@@ -111,6 +111,11 @@ long ASOOM::getMostRecentStampWithDepth() {
   return -1;
 }
 
+Eigen::Isometry3d ASOOM::getPose(long stamp) {
+  std::shared_lock lock(keyframes_.m);
+  return keyframes_.frames.at(stamp)->getPose();
+}
+
 grid_map_msgs::GridMap ASOOM::getMapMessage() {
   std::scoped_lock<std::mutex> lock(grid_map_msg_.m);
   // Force making a copy for thread safety reasons

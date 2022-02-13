@@ -159,6 +159,7 @@ void ASOOMWrapper::initialize() {
 
   trajectory_viz_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("viz", 1);
   recent_cloud_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("recent_cloud", 1);
+  recent_key_pose_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("recent_key_pose", 1);
   map_pub_ = nh_.advertise<grid_map_msgs::GridMap>("map", 1);
 
   map_sem_img_pub_ = nh_.advertise<sensor_msgs::Image>("map_sem_img", 1);
@@ -191,13 +192,19 @@ std::vector<Eigen::Vector3d> ASOOMWrapper::initFrustumPts(float scale) {
 }
 
 void ASOOMWrapper::outputCallback(const ros::TimerEvent& event) {
+  auto stamp = asoom_.getMostRecentStamp();
+  if (stamp < 0) {
+    std::cout << "\033[32m" << "[ROS] No frames received" << std::endl << std::flush;
+    return;
+  }
   using namespace std::chrono;
 
   auto start_t = high_resolution_clock::now();
   ros::Time time;
-  time.fromNSec(asoom_.getMostRecentStamp());
+  time.fromNSec(stamp);
   publishPoseGraphViz(time);
   publishRecentPointCloud(time);
+  publishRecentPose(time);
   publishUTMTransform(time);
   publishMap(time);
   publishKeyframeImgs();
@@ -320,6 +327,24 @@ void ASOOMWrapper::publishRecentPointCloud(const ros::Time& time) {
   recent_cloud_pub_.publish(cloud);
 }
 
+void ASOOMWrapper::publishRecentPose(const ros::Time& time) {
+  // Use the WithDepth version because otherwise might not actually 
+  // be in graph
+  long stamp = asoom_.getMostRecentStampWithDepth();
+  if (stamp < 0) {
+    // No keyframes with depth yet
+    return;
+  }
+
+  DepthCloudArray pc = asoom_.getDepthCloud(stamp);
+  geometry_msgs::PoseStamped pose_msg;
+  pose_msg.header.frame_id = "map";
+  pose_msg.header.stamp = time;
+  pose_msg.pose = Eigen2ROS(asoom_.getPose(stamp));
+
+  recent_key_pose_pub_.publish(pose_msg);
+}
+
 void ASOOMWrapper::publishUTMTransform(const ros::Time& time) {
   static tf2_ros::TransformBroadcaster br;
   geometry_msgs::TransformStamped trans;
@@ -418,6 +443,20 @@ geometry_msgs::Point ASOOMWrapper::Eigen2ROS(const Eigen::Vector3d& pos) {
   point.y = pos[1];
   point.z = pos[2];
   return point;
+}
+
+geometry_msgs::Pose ASOOMWrapper::Eigen2ROS(const Eigen::Isometry3d& pose) {
+  geometry_msgs::Pose pose_msg;
+  pose_msg.position.x = pose.translation()[0];
+  pose_msg.position.y = pose.translation()[1];
+  pose_msg.position.z = pose.translation()[2];
+  Eigen::Quaterniond quat(pose.rotation());
+  pose_msg.orientation.x = quat.x();
+  pose_msg.orientation.y = quat.y();
+  pose_msg.orientation.z = quat.z();
+  pose_msg.orientation.w = quat.w();
+
+  return pose_msg;
 }
 
 Eigen::Isometry3d ASOOMWrapper::ROS2Eigen(const geometry_msgs::PoseStamped& pose_msg) {
