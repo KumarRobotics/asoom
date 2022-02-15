@@ -2,8 +2,9 @@
 <launch>
   <!--node pkg="image_transport" type="republish" name="republish" output="screen" args="compressed in:=/ovc/rgb/image_color out:=/asoom/img"/-->
   <!--node pkg="image_proc" type="image_proc" ns="/ovc/rgb" name="colorize"/-->
+  <arg name="output" default="screen"/>
 
-  <node pkg="orbslam3_ros" type="orbslam3_ros_node" name="orbslam3_ros_node" output="screen">
+  <node pkg="orbslam3_ros" type="orbslam3_ros_node" name="orbslam3_ros_node" output="$(arg output)">
     <param name="vocab_path" value="/home/dcist/Repos/ORB_SLAM3/Vocabulary/ORBvoc.txt"/>
     <param name="settings_path" value="$(find orbslam3_ros)/config/titan_wide.yaml"/>
     <param name="show_viz" value="False"/>
@@ -11,7 +12,7 @@
     <remap from="~image" to="/ovc/rgb/image_color"/>
   </node>
 
-  <node pkg="erfnet_pytorch_ros" type="erfnet_ros.py" name="erfnet_ros" output="screen">
+  <node pkg="erfnet_pytorch_ros" type="erfnet_ros.py" name="erfnet_ros" output="$(arg output)">
     <param name="model_path" value="$(find erfnet_pytorch_ros)/models/model_generic.pth"/>
     <param name="gpu" value="False"/>
     <param name="num_threads" value="2"/>
@@ -20,7 +21,7 @@
     <remap from="~label" to="/asoom/sem"/>
   </node>
 
-  <node pkg="asoom" type="asoom_node" name="asoom" output="screen">
+  <node pkg="asoom" type="asoom_node" name="asoom" output="$(arg output)">
     <!-- Settings for adjusting perf -->
     <param name="stereo_use_sgbm" value="False"/>
     <param name="pose_graph_num_frames_opt" value="30"/>
@@ -47,12 +48,4 @@
     <remap from="~img" to="/ovc/bonus_left/left/image_color"/>
     <remap from="~sem" to="/ovc/bonus_left/left/image_label"/-->
   </node>
-
-  <node pkg="image_publisher" type="image_publisher" name="map_image_publisher" args="$(find asoom)/maps/grace_quarters.png">
-    <param name="frame_id" value="map_img"/>
-    <param name="flip_horizontal" value="false"/>
-    <param name="publish_rate" value="1"/>
-  </node>
-
-  <node pkg="tf2_ros" type="static_transform_publisher" name="link1_broadcaster" args="384110.00 4356585.69 -3 0 0 0 1 utm map_img" />
 </launch>
