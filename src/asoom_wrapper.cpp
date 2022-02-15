@@ -11,23 +11,30 @@
 #include "asoom/utils.h"
 
 ASOOMWrapper::ASOOMWrapper(ros::NodeHandle& nh)
-  : frustum_pts_(initFrustumPts(1)), nh_(nh), asoom_(createASOOM(nh))
-{
-  utm_origin_ = Eigen::Vector2d::Zero();
-
-  nh_.param<bool>("require_imgs", require_imgs_, true);
-  nh_.param<bool>("use_semantics", use_semantics_, false);
-  nh_.param<bool>("use_gps_stamp", use_gps_stamp_, true);
-}
+  : frustum_pts_(initFrustumPts(1)), nh_(nh), asoom_(createASOOM(nh)) {}
 
 ASOOM ASOOMWrapper::createASOOM(ros::NodeHandle& nh) {
+  // Parameters for ROS Wrapper
+  Eigen::Vector2d gps_origin_latlong;
+  nh.param<bool>("use_semantics", use_semantics_, false);
+  nh.param<bool>("require_imgs", require_imgs_, true);
+  nh.param<bool>("use_gps_stamp", use_gps_stamp_, true);
+  nh.param<double>("gps_origin_lat", gps_origin_latlong[0], 0);
+  nh.param<double>("gps_origin_long", gps_origin_latlong[1], 0);
+  if ((gps_origin_latlong.array() == 0).all()) {
+    utm_origin_ = Eigen::Vector2d::Zero();
+  } else {
+    int zone;
+    utm_origin_ = LatLong2UTM(gps_origin_latlong, zone);
+  }
+
   // Top level parameters
   ASOOM::Params asoom_params;
   nh.param<int>("pgo_thread_period_ms", asoom_params.pgo_thread_period_ms, 1000);
   nh.param<int>("stereo_thread_period_ms", asoom_params.stereo_thread_period_ms, 1000);
   nh.param<int>("map_thread_period_ms", asoom_params.map_thread_period_ms, 1000);
   nh.param<float>("keyframe_dist_thresh_m", asoom_params.keyframe_dist_thresh_m, 1);
-  nh.param<bool>("use_semantics", asoom_params.use_semantics, false);
+  asoom_params.use_semantics = use_semantics_;
   nh.param<std::string>("semantic_lut_path", asoom_params.semantic_lut_path, 
       SemanticColorLut::NO_SEM);
 
@@ -45,14 +52,10 @@ ASOOM ASOOMWrapper::createASOOM(ros::NodeHandle& nh) {
   nh.param<int>("pose_graph_num_frames_opt", pg_nfo, 10);
   PoseGraph::Params pose_graph_params(pg_bs_p, pg_bs_r, pg_gs, pg_gsps, pg_fs, pg_nfi, pg_nfo);
 
-  bool require_imgs, use_gps_stamp;
-  nh.param<bool>("require_imgs", require_imgs, true);
-  nh.param<bool>("use_gps_stamp", use_gps_stamp, true);
-
   // Parameters for Rectifier
   std::string r_calib_path;
   float r_scale;
-  if (require_imgs) {
+  if (require_imgs_) {
     nh.param<std::string>("rectifier_calib_path", r_calib_path, "");
   } else {
     r_calib_path = Rectifier::NO_IMGS;
@@ -91,8 +94,9 @@ ASOOM ASOOMWrapper::createASOOM(ros::NodeHandle& nh) {
   }
 
   std::cout << "\033[32m" << "[ROS] ======== Configuration ========" << std::endl <<
-    "[ROS] require_imgs: " << require_imgs << std::endl <<
-    "[ROS] use_gps_stamp: " << use_gps_stamp << std::endl <<
+    "[ROS] require_imgs: " << require_imgs_ << std::endl <<
+    "[ROS] use_gps_stamp: " << use_gps_stamp_ << std::endl <<
+    "[ROS] gps_origin (lat, long): " << gps_origin_latlong.transpose() << std::endl <<
     "[ROS] pgo_thread_period_ms: " << asoom_params.pgo_thread_period_ms << std::endl <<
     "[ROS] stereo_thread_period_ms: " << asoom_params.stereo_thread_period_ms << std::endl <<
     "[ROS] map_thread_period_ms: " << asoom_params.map_thread_period_ms << std::endl <<

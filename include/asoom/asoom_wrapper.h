@@ -29,7 +29,7 @@ class ASOOMWrapper {
      ***********************************************************/
 
     //! Helper function to create ASOOM object
-    static ASOOM createASOOM(ros::NodeHandle& nh);
+    ASOOM createASOOM(ros::NodeHandle& nh);
 
     //! Called to publish output
     void outputCallback(const ros::TimerEvent& event);

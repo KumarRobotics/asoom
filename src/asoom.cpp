@@ -1,4 +1,5 @@
 #include <chrono>
+#include <filesystem>
 #include <opencv2/imgcodecs/imgcodecs.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
@@ -8,6 +9,14 @@ ASOOM::ASOOM(const Params& asoom_params, const PoseGraph::Params& pg_params,
     const Rectifier::Params& rect_params, const DenseStereo::Params& stereo_params,
     const Map::Params& map_params) : params_(asoom_params) 
 {
+  {
+    // Setup cache. Somewhat sketchy
+    using namespace std::filesystem;
+    path cache = path(getenv("HOME")) / path(".ros/asoom_cache");
+    remove_all(cache);
+    create_directory(cache);
+  }
+
   DenseStereo stereo(stereo_params);
   PoseGraph pose_graph(pg_params);
   try {

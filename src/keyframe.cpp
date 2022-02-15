@@ -125,7 +125,7 @@ void Keyframe::saveToDisk() {
   
   if (!on_disk_) {
     std::ostringstream name; 
-    name << getenv("HOME") << "/.ros/frame_" << stamp_ << ".bin";
+    name << getenv("HOME") << "/.ros/asoom_cache/frame_" << stamp_ << ".bin";
     std::ofstream outfile(name.str(), std::ios::binary | std::ios::trunc);
 
     saveDataBinary(img_, outfile);
@@ -153,7 +153,7 @@ bool Keyframe::loadFromDisk() {
   }
 
   std::ostringstream name; 
-  name << getenv("HOME") << "/.ros/frame_" << stamp_ << ".bin";
+  name << getenv("HOME") << "/.ros/asoom_cache/frame_" << stamp_ << ".bin";
   std::ifstream infile(name.str(), std::ios::binary);
 
   if (!infile.is_open()) {

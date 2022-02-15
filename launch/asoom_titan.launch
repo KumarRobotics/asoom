@@ -26,6 +26,9 @@
     <param name="pose_graph_num_frames_opt" value="30"/>
     <param name="map_thread_period_ms" value="5000"/>
 
+    <param name="gps_origin_lat" value="39.941361"/>
+    <param name="gps_origin_long" value="-75.199691"/>
+
     <param name="require_imgs" value="True"/>
     <param name="use_semantics" value="True"/>
     <param name="use_gps_stamp" value="False"/>
