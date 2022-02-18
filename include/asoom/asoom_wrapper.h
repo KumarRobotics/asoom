@@ -74,6 +74,9 @@ class ASOOMWrapper {
 
     ASOOM asoom_;
 
+    //! Period with which to publish stuff to ROS
+    float ros_pub_period_ms_;
+
     //! If true, sub to synchronized images and poses
     bool require_imgs_;
 

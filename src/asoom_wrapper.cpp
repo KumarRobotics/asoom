@@ -27,6 +27,7 @@ ASOOM ASOOMWrapper::createASOOM(ros::NodeHandle& nh) {
     int zone;
     utm_origin_ = LatLong2UTM(gps_origin_latlong, zone);
   }
+  nh.param<float>("ros_pub_period_ms", ros_pub_period_ms_, 1000);
 
   // Top level parameters
   ASOOM::Params asoom_params;
@@ -97,6 +98,7 @@ ASOOM ASOOMWrapper::createASOOM(ros::NodeHandle& nh) {
     "[ROS] require_imgs: " << require_imgs_ << std::endl <<
     "[ROS] use_gps_stamp: " << use_gps_stamp_ << std::endl <<
     "[ROS] gps_origin (lat, long): " << gps_origin_latlong.transpose() << std::endl <<
+    "[ROS] ros_pub_period_ms: " << ros_pub_period_ms_ << std::endl <<
     "[ROS] pgo_thread_period_ms: " << asoom_params.pgo_thread_period_ms << std::endl <<
     "[ROS] stereo_thread_period_ms: " << asoom_params.stereo_thread_period_ms << std::endl <<
     "[ROS] map_thread_period_ms: " << asoom_params.map_thread_period_ms << std::endl <<
@@ -170,7 +172,7 @@ void ASOOMWrapper::initialize() {
   map_sem_img_viz_pub_ = nh_.advertise<sensor_msgs::Image>("map_sem_img_viz", 1);
   map_sem_img_center_pub_ = nh_.advertise<geometry_msgs::PointStamped>("map_sem_img_center", 1);
 
-  output_timer_ = nh_.createTimer(ros::Duration(1.0), &ASOOMWrapper::outputCallback, this);
+  output_timer_ = nh_.createTimer(ros::Duration(ros_pub_period_ms_/1000), &ASOOMWrapper::outputCallback, this);
 }
 
 std::vector<Eigen::Vector3d> ASOOMWrapper::initFrustumPts(float scale) {
