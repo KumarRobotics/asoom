@@ -113,7 +113,7 @@ long ASOOM::getMostRecentStamp() const {
 long ASOOM::getMostRecentStampWithDepth() {
   std::shared_lock lock(keyframes_.m);
   for (auto it=keyframes_.frames.rbegin(); it!=keyframes_.frames.rend(); it++) {
-    if (it->second->hasDepth()) {
+    if (it->second->hasDepth() && it->second->getScale() > 0) {
       return it->second->getStamp();
     }
   }

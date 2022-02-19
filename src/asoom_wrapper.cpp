@@ -342,7 +342,6 @@ void ASOOMWrapper::publishRecentPose(const ros::Time& time) {
     return;
   }
 
-  DepthCloudArray pc = asoom_.getDepthCloud(stamp);
   geometry_msgs::PoseStamped pose_msg;
   pose_msg.header.frame_id = "map";
   pose_msg.header.stamp = time;
