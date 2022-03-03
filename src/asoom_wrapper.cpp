@@ -214,7 +214,6 @@ void ASOOMWrapper::outputCallback(const ros::TimerEvent& event) {
   publishUTMTransform(time);
   publishMap(time);
   publishKeyframeImgs();
-  map_pub_.publish(asoom_.getMapMessage());
   auto end_t = high_resolution_clock::now();
 
   std::cout << "\033[32m" << "[ROS] Output Visualization: " <<
