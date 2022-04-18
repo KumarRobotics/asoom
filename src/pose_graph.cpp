@@ -22,7 +22,7 @@ size_t PoseGraph::addFrame(long stamp, const Eigen::Isometry3d& pose,
   if (size_ > 0) {
     // Get different from most recent
     auto most_recent_pose = pose_history_.rbegin()->second;
-    auto diff = most_recent_pose->pose.inverse() * pose;
+    Eigen::Isometry3d diff = most_recent_pose->pose.inverse() * pose;
     graph_.emplace_shared<gtsam::BetweenPoseScaleFactor>(most_recent_pose->key, 
         P(size_), S(0), Eigen2GTSAM(diff), gtsam::noiseModel::Diagonal::Sigmas(sigmas));
 
