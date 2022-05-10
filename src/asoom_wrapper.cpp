@@ -36,6 +36,7 @@ ASOOM ASOOMWrapper::createASOOM(ros::NodeHandle& nh) {
   nh.param<int>("map_thread_period_ms", asoom_params.map_thread_period_ms, 1000);
   nh.param<float>("keyframe_dist_thresh_m", asoom_params.keyframe_dist_thresh_m, 1);
   asoom_params.use_semantics = use_semantics_;
+  nh.param<bool>("semantics_colored", asoom_params.semantics_colored, false);
   nh.param<std::string>("semantic_lut_path", asoom_params.semantic_lut_path, 
       SemanticColorLut::NO_SEM);
 
@@ -104,6 +105,7 @@ ASOOM ASOOMWrapper::createASOOM(ros::NodeHandle& nh) {
     "[ROS] map_thread_period_ms: " << asoom_params.map_thread_period_ms << std::endl <<
     "[ROS] keyframe_dist_thresh_m: " << asoom_params.keyframe_dist_thresh_m << std::endl <<
     "[ROS] use_semantics: " << asoom_params.use_semantics << std::endl <<
+    "[ROS] semantics_colored: " << asoom_params.semantics_colored << std::endl <<
     "[ROS] semantic_lut_path: " << asoom_params.semantic_lut_path << std::endl <<
     "[ROS] ===============================" << std::endl <<
     "[ROS] pose_graph_between_sigmas_pos: " << pg_bs_p << std::endl <<
@@ -430,6 +432,7 @@ void ASOOMWrapper::gpsCallback(const sensor_msgs::NavSatFix::ConstPtr& gps_msg) 
 void ASOOMWrapper::semCallback(const sensor_msgs::Image::ConstPtr& sem_msg) {
   cv::Mat img;
   if (sem_msg->encoding == sensor_msgs::image_encodings::BGR8 ||
+      sem_msg->encoding == sensor_msgs::image_encodings::RGB8 ||
       sem_msg->encoding == sensor_msgs::image_encodings::TYPE_8UC3) {
     // Color
     img = cv_bridge::toCvCopy(sem_msg, sensor_msgs::image_encodings::BGR8)->image;

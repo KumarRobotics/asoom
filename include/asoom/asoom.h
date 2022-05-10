@@ -28,13 +28,15 @@ class ASOOM {
 
       //! If true, require semantic segmentation for images before stereo
       bool use_semantics;
+      bool semantics_colored;
       std::string semantic_lut_path;
 
       Params(int ptpm = 1000, int stpm = 1000, int mtps = 1000, float kdtm = 5, 
-          bool us = false, const std::string& slp = SemanticColorLut::NO_SEM) :
+          bool us = false, bool sc = false, 
+          const std::string& slp = SemanticColorLut::NO_SEM) :
         pgo_thread_period_ms(ptpm), stereo_thread_period_ms(stpm), 
         map_thread_period_ms(mtps), keyframe_dist_thresh_m(kdtm), use_semantics(us),
-        semantic_lut_path(slp) {}
+        semantics_colored(sc), semantic_lut_path(slp) {}
     };
 
     /*!

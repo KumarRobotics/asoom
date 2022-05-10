@@ -3,8 +3,8 @@ cam0:
   camera_model: pinhole
   distortion_coeffs: [0, 0, 0, 0]
   distortion_model: radtan
-  intrinsics: [417.5968851353022, 417.5968851353022, 512, 384]
-  resolution: [1024, 768]
+  intrinsics: [217.49837767463657, 217.49837767463657, 320, 200]
+  resolution: [640, 400]
   rostopic: /quadrotor/RGBCamera_Down/image_raw
   T_body_cam:
     pos: [0.0, 0.0, 0.0]

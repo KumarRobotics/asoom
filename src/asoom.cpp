@@ -74,10 +74,17 @@ void ASOOM::addGPS(long stamp, const Eigen::Vector3d& pos) {
 void ASOOM::addSemantics(long stamp, const cv::Mat& sem) {
   if (params_.use_semantics) {
     SemanticImage sem_ind(stamp, cv::Mat());
-    if (sem.type() == CV_8UC1) {
-      sem_ind.sem = sem;
-    } else {
+    if (params_.semantics_colored) {
       semantic_color_lut_.color2Ind(sem, sem_ind.sem);      
+    } else {
+      if (sem.channels() == 1) {
+        sem_ind.sem = sem;
+      } else if (sem.channels() == 3) {
+        cv::cvtColor(sem, sem_ind.sem, cv::COLOR_BGR2GRAY);
+      } else {
+        std::cout << "\033[31m" << "[ERROR] Strange number of input channels (not 1 or 3) in sem img" 
+          << "\033[0m" << std::endl;
+      }
     }
     std::scoped_lock<std::mutex> lock(semantic_input_.m);
     semantic_input_.buf.emplace_back(sem_ind);
