@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
-  <node pkg="asoom" type="asoom_node" name="asoom" output="screen">
+  <node pkg="asoom" type="asoom_node" name="asoom" output="screen" ns="quadrotor">
     <!-- Settings for adjusting perf -->
     <param name="stereo_use_sgbm" value="False"/>
     <param name="pose_graph_num_frames_opt" value="30"/>
@@ -15,8 +15,8 @@
 
     <param name="rectifier_calib_path" value="$(find asoom)/config/sim.yaml"/>
     <remap from="~pose" to="/unity_ros/quadrotor/TrueState/pose"/>
-    <remap from="~img" to="/quadrotor/RGBCamera_Down/image_raw"/>
-    <remap from="~sem" to="/quadrotor/SemanticCamera/image_raw"/>
+    <remap from="~img" to="RGBCamera_Down/image_raw"/>
+    <remap from="~sem" to="SemanticCamera/image_raw"/>
     <remap from="~gps" to="/ublox/fix"/>
   </node>
 </launch>
