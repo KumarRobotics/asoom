@@ -8,4 +8,4 @@ cam0:
   rostopic: /quadrotor/RGBCamera_Down/image_raw
   T_body_cam:
     pos: [0.0, 0.0, 0.0]
-    rot: [0.707, -0.707, 0.0, 0.0] # xyzw quaternion
+    rot: [0.0, 1.0, 0.0, 0.0] # xyzw quaternion

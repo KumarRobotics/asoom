@@ -5,13 +5,15 @@
     <param name="stereo_use_sgbm" value="False"/>
     <param name="pose_graph_num_frames_opt" value="30"/>
     <param name="map_thread_period_ms" value="5000"/>
-    <param name="map_req_point_density" value="50"/>
+    <param name="map_req_point_density" value="30"/>
+    <param name="rectifier_scale" value="1"/>
+    <param name="map_resolution" value="2"/>
 
     <param name="require_imgs" value="True"/>
     <param name="use_semantics" value="True"/>
     <param name="semantic_lut_path" value="$(find asoom)/config/semantic_lut.yaml"/>
     <param name="pose_graph_fix_scale" value="True"/>
-    <param name="keyframe_dist_thresh_m" value="2"/>
+    <param name="keyframe_dist_thresh_m" value="5"/>
 
     <param name="rectifier_calib_path" value="$(find asoom)/config/sim.yaml"/>
     <remap from="~pose" to="/unity_ros/quadrotor/TrueState/pose"/>
