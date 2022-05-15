@@ -5,6 +5,7 @@
     <param name="stereo_use_sgbm" value="False"/>
     <param name="pose_graph_num_frames_opt" value="30"/>
     <param name="map_thread_period_ms" value="5000"/>
+    <param name="ros_pub_period_ms" value="5000"/>
     <param name="map_req_point_density" value="30"/>
     <param name="rectifier_scale" value="1"/>
     <param name="map_resolution" value="2"/>
