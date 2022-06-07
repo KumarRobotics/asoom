@@ -25,14 +25,18 @@ class DenseStereo {
       int uniqueness_ratio;
       int speckle_window_size;
       int speckle_range;
+      // depth filtering
+      float filter_min_depth;
+      float filter_max_depth;
 
       Params(bool us, int md, int nd, int bs, int p1c, int p2c, int d12md, int pfc, int ur,
-          int sws, int sr) : 
+          int sws, int sr, float fmind, float fmaxd) : 
         use_sgbm(us), min_disparity(md), num_disparities(nd), block_size(bs), P1_coeff(p1c), 
         P2_coeff(p2c), disp_12_map_diff(d12md), pre_filter_cap(pfc), uniqueness_ratio(ur), 
-        speckle_window_size(sws), speckle_range(sr) {}
+        speckle_window_size(sws), speckle_range(sr), filter_min_depth(fmind),
+        filter_max_depth(fmaxd) {}
 
-      Params() : Params(true, 1, 80, 9, 1, 3, 0, 35, 10, 100, 20) {}
+      Params() : Params(true, 1, 80, 9, 1, 3, 0, 35, 10, 100, 20, 20, 120) {}
     };
 
     DenseStereo(const Params& params);

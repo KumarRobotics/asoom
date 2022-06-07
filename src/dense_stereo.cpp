@@ -67,6 +67,11 @@ std::shared_ptr<Eigen::Array3Xd> DenseStereo::projectDepth(
   // Flattens to row-major, since OpenCV is managing storage here
   Eigen::Map<const Eigen::RowVectorXd> disp_eig(disp.ptr<double>(), disp.rows*disp.cols);
   // All the invalid zeros will now be infs due to inversion
-  return std::make_shared<Eigen::Array3Xd>(
-      img_plane_pts_.rowwise() * (baseline * K_(0, 0) / disp_eig.array()));
+  Eigen::RowVectorXd depths = baseline * K_(0, 0) / disp_eig.array();
+  // Filter depths
+  depths = (depths.array() < params_.filter_min_depth).select(
+      std::numeric_limits<double>::infinity(), depths);
+  depths = (depths.array() > params_.filter_max_depth).select(
+      std::numeric_limits<double>::infinity(), depths);
+  return std::make_shared<Eigen::Array3Xd>(img_plane_pts_.rowwise() * depths.array());
 }

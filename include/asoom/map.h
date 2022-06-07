@@ -62,11 +62,12 @@ class Map {
 
     /*!
      * Export map images
+     * @param color RGB image
      * @param sem Image of semantic layer (grayscale class indices)
      * @param sem_viz Visualization of semantic layer (BGR color)
      * @return Map center
      */
-    Eigen::Vector2f getMapSemImg(cv::Mat& sem, cv::Mat& sem_viz) const;
+    Eigen::Vector2f getMapImgs(cv::Mat& color, cv::Mat& sem, cv::Mat& sem_viz) const;
 
   private:
     const Params params_;

@@ -109,11 +109,12 @@ class ASOOM {
 
     /*!
      * Export map images
+     * @param color RGB image of map
      * @param sem Image of semantic layer (grayscale class indices)
      * @param sem_viz Visualization of semantic layer (BGR color)
      * @return Map center
      */
-    Eigen::Vector2f getSemMapImages(cv::Mat& sem, cv::Mat& sem_viz);
+    Eigen::Vector2f getMapImgs(cv::Mat& color, cv::Mat& sem, cv::Mat& sem_viz);
 
     /*! 
      * Get list of keyframe stamps and images that have not yet been returned via
@@ -176,6 +177,7 @@ class ASOOM {
     struct MapMessage {
       std::mutex m;
       grid_map_msgs::GridMap msg;
+      cv::Mat color_img;
       cv::Mat sem_img;
       cv::Mat sem_img_viz;
       Eigen::Vector2f sem_img_center;

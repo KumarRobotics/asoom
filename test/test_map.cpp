@@ -43,8 +43,8 @@ TEST(ASOOM_map_test, test_map) {
   map.addCloud(cloud, Eigen::Isometry3d::Identity(), 0);
   EXPECT_EQ(map.getMap().atPosition("color", pos1), 2);
 
-  cv::Mat sem, sem_viz;
-  map.getMapSemImg(sem, sem_viz);
+  cv::Mat color, sem, sem_viz;
+  map.getMapImgs(color, sem, sem_viz);
   grid_map::Index p;
   map.getMap().getIndex(pos1, p);
   EXPECT_EQ(sem.at<uint8_t>(p.x(), p.y()), 2);

@@ -95,7 +95,8 @@ class ASOOMWrapper {
       sensor_msgs::Image>> pose_img_sync_sub_;
     ros::Subscriber gps_sub_, pose_sub_, sem_sub_;
     ros::Publisher trajectory_viz_pub_, recent_cloud_pub_, recent_key_pose_pub_, map_pub_, 
-      keyframe_img_pub_, map_sem_img_pub_, map_sem_img_viz_pub_, map_sem_img_center_pub_;
+      keyframe_img_pub_, map_color_img_pub_, map_sem_img_pub_, map_sem_img_viz_pub_, 
+      map_sem_img_center_pub_;
 
     //! Timer to loop and publish visualizations and the map
     ros::Timer output_timer_;

@@ -138,9 +138,10 @@ grid_map_msgs::GridMap ASOOM::getMapMessage() {
   return grid_map_msgs::GridMap(grid_map_msg_.msg);
 }
 
-Eigen::Vector2f ASOOM::getSemMapImages(cv::Mat& sem, cv::Mat& sem_viz) {
+Eigen::Vector2f ASOOM::getMapImgs(cv::Mat& color, cv::Mat& sem, cv::Mat& sem_viz) {
   std::scoped_lock<std::mutex> lock(grid_map_msg_.m);
   // Clone to force deep copy, since cv::Mat is really a pointer internally
+  color = grid_map_msg_.color_img.clone();
   sem = grid_map_msg_.sem_img.clone();
   sem_viz = grid_map_msg_.sem_img_viz.clone();
   return grid_map_msg_.sem_img_center;
@@ -429,8 +430,10 @@ bool ASOOM::MapThread::operator()() {
     if (keyframes_to_compute.size() > 0) {
       std::scoped_lock<std::mutex> lock(asoom_->grid_map_msg_.m);
       asoom_->grid_map_msg_.msg = map_.exportROSMsg();
-      asoom_->grid_map_msg_.sem_img_center = map_.getMapSemImg(
-          asoom_->grid_map_msg_.sem_img, asoom_->grid_map_msg_.sem_img_viz);
+      asoom_->grid_map_msg_.sem_img_center = map_.getMapImgs(
+          asoom_->grid_map_msg_.color_img,
+          asoom_->grid_map_msg_.sem_img, 
+          asoom_->grid_map_msg_.sem_img_viz);
     }
     auto export_ros_t = high_resolution_clock::now();
     saveKeyframes(keyframes_to_compute);

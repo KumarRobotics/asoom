@@ -78,6 +78,8 @@ ASOOM ASOOMWrapper::createASOOM(ros::NodeHandle& nh) {
   nh.param<int>("stereo_uniqueness_ratio", stereo_params.uniqueness_ratio, 10);
   nh.param<int>("stereo_speckle_window_size", stereo_params.speckle_window_size, 100);
   nh.param<int>("stereo_speckle_range", stereo_params.speckle_range, 20);
+  nh.param<float>("stereo_filter_min_depth", stereo_params.filter_min_depth, 20);
+  nh.param<float>("stereo_filter_max_depth", stereo_params.filter_max_depth, 120);
 
   // Parameters for Map
   Map::Params map_params;
@@ -130,6 +132,8 @@ ASOOM ASOOMWrapper::createASOOM(ros::NodeHandle& nh) {
     "[ROS] stereo_uniqueness_ratio:" << stereo_params.uniqueness_ratio << std::endl << 
     "[ROS] stereo_speckle_window_size: " << stereo_params.speckle_window_size << std::endl << 
     "[ROS] stereo_speckle_range: " << stereo_params.speckle_range << std::endl << 
+    "[ROS] stereo_filter_min_depth: " << stereo_params.filter_min_depth << std::endl << 
+    "[ROS] stereo_filter_max_depth: " << stereo_params.filter_max_depth << std::endl << 
     "[ROS] ===============================" << std::endl <<
     "[ROS] map_resolution: " << map_params.resolution << std::endl << 
     "[ROS] map_buffer_size_m: " << map_params.buffer_size_m << std::endl << 
@@ -170,6 +174,7 @@ void ASOOMWrapper::initialize() {
   recent_key_pose_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("recent_key_pose", 1);
   map_pub_ = nh_.advertise<grid_map_msgs::GridMap>("map", 1);
 
+  map_color_img_pub_ = nh_.advertise<sensor_msgs::Image>("map_color_img", 1);
   map_sem_img_pub_ = nh_.advertise<sensor_msgs::Image>("map_sem_img", 1);
   map_sem_img_viz_pub_ = nh_.advertise<sensor_msgs::Image>("map_sem_img_viz", 1);
   map_sem_img_center_pub_ = nh_.advertise<geometry_msgs::PointStamped>("map_sem_img_center", 1);
@@ -373,12 +378,13 @@ void ASOOMWrapper::publishUTMTransform(const ros::Time& time) {
 void ASOOMWrapper::publishMap(const ros::Time& time) {
   map_pub_.publish(asoom_.getMapMessage());
  
-  cv::Mat sem, sem_viz;
-  Eigen::Vector2f center = asoom_.getSemMapImages(sem, sem_viz);
+  cv::Mat color, sem, sem_viz;
+  Eigen::Vector2f center = asoom_.getMapImgs(color, sem, sem_viz);
 
   std_msgs::Header header;
   header.stamp = time;
   sensor_msgs::ImagePtr msg = cv_bridge::CvImage(header, "mono8", sem).toImageMsg();
+  sensor_msgs::ImagePtr color_msg = cv_bridge::CvImage(header, "bgr8", color).toImageMsg();
   sensor_msgs::ImagePtr viz_msg = cv_bridge::CvImage(header, "bgr8", sem_viz).toImageMsg();
 
   geometry_msgs::PointStamped map_center_msg;
@@ -389,6 +395,7 @@ void ASOOMWrapper::publishMap(const ros::Time& time) {
   map_center_msg.point.z = 0;
 
   map_sem_img_center_pub_.publish(map_center_msg);
+  map_color_img_pub_.publish(color_msg);
   map_sem_img_pub_.publish(msg);
   map_sem_img_viz_pub_.publish(viz_msg);
 }

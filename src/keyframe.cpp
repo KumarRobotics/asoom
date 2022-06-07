@@ -21,7 +21,7 @@ DepthCloudArray Keyframe::getDepthCloud() const {
       dense_ind = y*rect_img_.size().width + x;
 
       // Undefined depth
-      if ((*depth_)(2, dense_ind) > 80 || (*depth_)(2, dense_ind) < 1) {
+      if ((*depth_)(2, dense_ind) < 1) {
         continue;
       }
       

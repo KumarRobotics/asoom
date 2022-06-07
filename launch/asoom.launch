@@ -24,16 +24,18 @@
     <param name="stereo_use_sgbm" value="False"/>
     <param name="pose_graph_num_frames_opt" value="30"/>
     <param name="map_thread_period_ms" value="5000"/>
+    <param name="map_req_point_density" value="100"/>
+    <param name="stereo_filter_min_depth" value="60"/>
 
-    <param name="gps_origin_lat" value="39.941361"/>
-    <param name="gps_origin_long" value="-75.199691"/>
+    <!--param name="gps_origin_lat" value="39.941361"/>
+    <param name="gps_origin_long" value="-75.199691"/-->
 
     <param name="require_imgs" value="True"/>
     <param name="use_semantics" value="True"/>
     <param name="use_gps_stamp" value="False"/>
     <param name="semantic_lut_path" value="$(find asoom)/config/semantic_lut.yaml"/>
     <param name="pose_graph_fix_scale" value="False"/>
-    <param name="keyframe_dist_thresh_m" value="2"/>
+    <param name="keyframe_dist_thresh_m" value="3"/>
 
     <param name="rectifier_calib_path" value="$(find asoom)/config/titan_wide.yaml"/>
     <remap from="~pose" to="/orbslam3_ros_node/pose"/>
