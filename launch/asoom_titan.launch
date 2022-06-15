@@ -26,7 +26,7 @@
     <param name="stereo_use_sgbm" value="False"/>
     <param name="pose_graph_num_frames_opt" value="30"/>
     <param name="map_thread_period_ms" value="5000"/>
-    <param name="ros_pub_period_ms" value="5000"/>
+    <param name="ros_pub_period_ms" value="10000"/>
 
     <param name="gps_origin_lat" value="39.941361"/>
     <param name="gps_origin_long" value="-75.199691"/>
@@ -36,8 +36,8 @@
     <param name="use_gps_stamp" value="False"/>
     <param name="semantic_lut_path" value="$(find asoom)/config/semantic_lut.yaml"/>
     <param name="pose_graph_fix_scale" value="False"/>
-    <param name="keyframe_dist_thresh_m" value="2"/>
-    <param name="map_dist_for_rebuild" value="2"/>
+    <param name="keyframe_dist_thresh_m" value="5"/>
+    <param name="map_dist_for_rebuild" value="10"/>
     <param name="map_ang_for_rebuild" value="0.1"/>
 
     <param name="rectifier_calib_path" value="$(find asoom)/config/titan_wide.yaml"/>
