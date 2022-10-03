@@ -61,6 +61,7 @@
   <depend>grid_map_core</depend>
   <depend>grid_map_ros</depend>
   <depend>grid_map_msgs</depend>
+  <depend>semantics_manager</depend>
 
   <test_depend>gtest</test_depend>
 

@@ -31,14 +31,13 @@ ASOOM ASOOMWrapper::createASOOM(ros::NodeHandle& nh) {
 
   // Top level parameters
   ASOOM::Params asoom_params;
+  nh.param<std::string>("world_config_path", asoom_params.world_config_path, "");
   nh.param<int>("pgo_thread_period_ms", asoom_params.pgo_thread_period_ms, 1000);
   nh.param<int>("stereo_thread_period_ms", asoom_params.stereo_thread_period_ms, 1000);
   nh.param<int>("map_thread_period_ms", asoom_params.map_thread_period_ms, 1000);
   nh.param<float>("keyframe_dist_thresh_m", asoom_params.keyframe_dist_thresh_m, 1);
   asoom_params.use_semantics = use_semantics_;
   nh.param<bool>("semantics_colored", asoom_params.semantics_colored, false);
-  nh.param<std::string>("semantic_lut_path", asoom_params.semantic_lut_path, 
-      SemanticColorLut::NO_SEM);
 
   // Parameters for PGO
   // These are doubles because we use Isometry3d everywhere for poses

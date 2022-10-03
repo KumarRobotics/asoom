@@ -3,12 +3,12 @@
 #include <thread>
 #include <shared_mutex>
 
+#include "semantics_manager/semantic_color_lut.h"
 #include "asoom/pose_graph.h"
 #include "asoom/rectifier.h"
 #include "asoom/dense_stereo.h"
 #include "asoom/keyframe.h"
 #include "asoom/map.h"
-#include "asoom/semantic_color_lut.h"
 
 /*!
  * Manager class for system
@@ -18,6 +18,8 @@
 class ASOOM {
   public:
     struct Params {
+      std::string classes_path;
+
       //! Periods for threads to run at in ms
       int pgo_thread_period_ms;
       int stereo_thread_period_ms;
@@ -29,14 +31,12 @@ class ASOOM {
       //! If true, require semantic segmentation for images before stereo
       bool use_semantics;
       bool semantics_colored;
-      std::string semantic_lut_path;
 
-      Params(int ptpm = 1000, int stpm = 1000, int mtps = 1000, float kdtm = 5, 
-          bool us = false, bool sc = false, 
-          const std::string& slp = SemanticColorLut::NO_SEM) :
-        pgo_thread_period_ms(ptpm), stereo_thread_period_ms(stpm), 
+      Params(const std::string& cp = "", int ptpm = 1000, int stpm = 1000, 
+          int mtps = 1000, float kdtm = 5, bool us = false, bool sc = false) :
+        classes_path(cp), pgo_thread_period_ms(ptpm), stereo_thread_period_ms(stpm), 
         map_thread_period_ms(mtps), keyframe_dist_thresh_m(kdtm), use_semantics(us),
-        semantics_colored(sc), semantic_lut_path(slp) {}
+        semantics_colored(sc) {}
     };
 
     /*!
