@@ -3,8 +3,8 @@
 #include <grid_map_ros/grid_map_ros.hpp>
 #include <grid_map_msgs/GridMap.h>
 #include <Eigen/Dense>
+#include "semantics_manager/semantic_color_lut.h"
 #include "asoom/keyframe.h"
-#include "asoom/semantic_color_lut.h"
 
 /*!
  * Wraps a GridMap as the underlying data structure, manages integrated map

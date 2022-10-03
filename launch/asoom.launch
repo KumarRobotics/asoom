@@ -21,6 +21,8 @@
   </node>
 
   <node pkg="asoom" type="asoom_node" name="asoom" output="screen">
+    <param name="world_config_path" value="$(find semantics_manager)/config/config.yaml"/>
+
     <!-- Settings for adjusting perf -->
     <param name="stereo_use_sgbm" value="False"/>
     <param name="pose_graph_num_frames_opt" value="30"/>
@@ -35,7 +37,6 @@
     <param name="require_imgs" value="True"/>
     <param name="use_semantics" value="True"/>
     <param name="use_gps_stamp" value="False"/>
-    <param name="semantic_lut_path" value="$(find asoom)/config/semantic_lut.yaml"/>
     <param name="pose_graph_fix_scale" value="False"/>
     <param name="keyframe_dist_thresh_m" value="3"/>
     <param name="map_dist_for_rebuild" value="2"/>

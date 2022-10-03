@@ -7,6 +7,7 @@
 #include <sensor_msgs/PointField.h>
 #include <visualization_msgs/MarkerArray.h>
 
+#include "semantics_manager/semantics_manager.h"
 #include "asoom/asoom_wrapper.h"
 #include "asoom/utils.h"
 
@@ -27,11 +28,15 @@ ASOOM ASOOMWrapper::createASOOM(ros::NodeHandle& nh) {
     int zone;
     utm_origin_ = LatLong2UTM(gps_origin_latlong, zone);
   }
+
+  // Path to world configuration
+  std::string world_config_path;
+  nh.param<std::string>("world_config_path", world_config_path, "");
   nh.param<float>("ros_pub_period_ms", ros_pub_period_ms_, 1000);
 
   // Top level parameters
   ASOOM::Params asoom_params;
-  nh.param<std::string>("world_config_path", asoom_params.world_config_path, "");
+  asoom_params.classes_path = semantics_manager::getClassesPath(world_config_path);
   nh.param<int>("pgo_thread_period_ms", asoom_params.pgo_thread_period_ms, 1000);
   nh.param<int>("stereo_thread_period_ms", asoom_params.stereo_thread_period_ms, 1000);
   nh.param<int>("map_thread_period_ms", asoom_params.map_thread_period_ms, 1000);
@@ -82,21 +87,24 @@ ASOOM ASOOMWrapper::createASOOM(ros::NodeHandle& nh) {
 
   // Parameters for Map
   Map::Params map_params;
-  nh.param<float>("map_resolution", map_params.resolution, 2);
+  semantics_manager::MapConfig map_config(semantics_manager::getMapPath(world_config_path));
+  map_params.resolution = map_config.resolution;
   nh.param<float>("map_buffer_size_m", map_params.buffer_size_m, 50);
   nh.param<float>("map_req_point_density", map_params.req_point_density, 500);
   nh.param<float>("map_dist_for_rebuild", map_params.dist_for_rebuild, 1);
   nh.param<float>("map_ang_for_rebuild", map_params.ang_for_rebuild, 5*M_PI/180);
 
-  if (asoom_params.use_semantics && 
-      asoom_params.semantic_lut_path == SemanticColorLut::NO_SEM) 
-  {
-    std::cout << "\033[31m" << 
-      "[WARNING] Using semantics, but no semantic color LUT is provided." << 
-      "\033[0m" << std::endl;
+  if (!map_config.dynamic) {
+    ROS_WARN_STREAM("[ASOOM] You are using ASOOM with a static world config. " <<
+        "This is generally not desirable.");
   }
 
-  std::cout << "\033[32m" << "[ROS] ======== Configuration ========" << std::endl <<
+  ROS_INFO_STREAM("\033[32m" << "[ASOOM]" << std::endl <<
+    "[ROS] ======== Configuration ========" << std::endl <<
+    "[ROS] world_config_path: " << world_config_path << std::endl <<
+    "[ROS] classes_path: " << asoom_params.classes_path << std::endl <<
+    "[ROS] resolution: " << map_params.resolution << std::endl << 
+    "[ROS] ===============================" << std::endl <<
     "[ROS] require_imgs: " << require_imgs_ << std::endl <<
     "[ROS] use_gps_stamp: " << use_gps_stamp_ << std::endl <<
     "[ROS] gps_origin (lat, long): " << gps_origin_latlong.transpose() << std::endl <<
@@ -107,7 +115,6 @@ ASOOM ASOOMWrapper::createASOOM(ros::NodeHandle& nh) {
     "[ROS] keyframe_dist_thresh_m: " << asoom_params.keyframe_dist_thresh_m << std::endl <<
     "[ROS] use_semantics: " << asoom_params.use_semantics << std::endl <<
     "[ROS] semantics_colored: " << asoom_params.semantics_colored << std::endl <<
-    "[ROS] semantic_lut_path: " << asoom_params.semantic_lut_path << std::endl <<
     "[ROS] ===============================" << std::endl <<
     "[ROS] pose_graph_between_sigmas_pos: " << pg_bs_p << std::endl <<
     "[ROS] pose_graph_between_sigmas_rot: " << pg_bs_r << std::endl <<
@@ -134,12 +141,11 @@ ASOOM ASOOMWrapper::createASOOM(ros::NodeHandle& nh) {
     "[ROS] stereo_filter_min_depth: " << stereo_params.filter_min_depth << std::endl << 
     "[ROS] stereo_filter_max_depth: " << stereo_params.filter_max_depth << std::endl << 
     "[ROS] ===============================" << std::endl <<
-    "[ROS] map_resolution: " << map_params.resolution << std::endl << 
     "[ROS] map_buffer_size_m: " << map_params.buffer_size_m << std::endl << 
     "[ROS] map_req_point_density: " << map_params.req_point_density << std::endl << 
     "[ROS] map_dist_for_rebuild: " << map_params.dist_for_rebuild << std::endl << 
     "[ROS] map_ang_for_rebuild: " << map_params.ang_for_rebuild << std::endl << 
-    "[ROS] ====== End Configuration ======" << "\033[0m" << std::endl;
+    "[ROS] ====== End Configuration ======" << "\033[0m");
 
   return ASOOM(asoom_params, pose_graph_params, rectifier_params, stereo_params, map_params);
 }

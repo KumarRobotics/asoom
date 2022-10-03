@@ -144,7 +144,6 @@ add_library(${PROJECT_NAME}
   src/rectifier.cpp
   src/dense_stereo.cpp
   src/map.cpp
-  src/semantic_color_lut.cpp
 )
 
 ## Add cmake target dependencies of the library

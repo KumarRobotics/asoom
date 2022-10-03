@@ -20,7 +20,7 @@ ASOOM::ASOOM(const Params& asoom_params, const PoseGraph::Params& pg_params,
   DenseStereo stereo(stereo_params);
   PoseGraph pose_graph(pg_params);
   try {
-    semantic_color_lut_ = SemanticColorLut(params_.class_path);
+    semantic_color_lut_ = SemanticColorLut(params_.classes_path);
   } catch (const std::exception& ex) {
     // This usually happens when there is a yaml reading error
     std::cout << "\033[31m" << "[ERROR] Cannot create semantic LUT: " << ex.what() 

@@ -1,7 +1,7 @@
 #include <iostream>
 #include <fstream>
+#include "semantics_manager/semantic_color_lut.h"
 #include "asoom/keyframe.h"
-#include "asoom/semantic_color_lut.h"
 
 DepthCloudArray Keyframe::getDepthCloud() const {
   if (!hasDepth()) {
