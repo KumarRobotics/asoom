@@ -15,23 +15,22 @@ ASOOMWrapper::ASOOMWrapper(ros::NodeHandle& nh)
   : frustum_pts_(initFrustumPts(1)), nh_(nh), asoom_(createASOOM(nh)) {}
 
 ASOOM ASOOMWrapper::createASOOM(ros::NodeHandle& nh) {
-  // Parameters for ROS Wrapper
-  Eigen::Vector2d gps_origin_latlong;
-  nh.param<bool>("use_semantics", use_semantics_, false);
-  nh.param<bool>("require_imgs", require_imgs_, true);
-  nh.param<bool>("use_gps_stamp", use_gps_stamp_, true);
-  nh.param<double>("gps_origin_lat", gps_origin_latlong[0], 0);
-  nh.param<double>("gps_origin_long", gps_origin_latlong[1], 0);
-  if ((gps_origin_latlong.array() == 0).all()) {
-    utm_origin_ = Eigen::Vector2d::Zero();
-  } else {
-    int zone;
-    utm_origin_ = LatLong2UTM(gps_origin_latlong, zone);
-  }
-
   // Path to world configuration
   std::string world_config_path;
   nh.param<std::string>("world_config_path", world_config_path, "");
+  semantics_manager::MapConfig map_config(semantics_manager::getMapPath(world_config_path));
+
+  // Parameters for ROS Wrapper
+  nh.param<bool>("use_semantics", use_semantics_, false);
+  nh.param<bool>("require_imgs", require_imgs_, true);
+  nh.param<bool>("use_gps_stamp", use_gps_stamp_, true);
+  if (map_config.have_fixed_origin) {
+    utm_origin_ = Eigen::Vector2d::Zero();
+  } else {
+    int zone;
+    utm_origin_ = LatLong2UTM(map_config.fixed_origin_gps, zone);
+  }
+
   nh.param<float>("ros_pub_period_ms", ros_pub_period_ms_, 1000);
 
   // Top level parameters
@@ -87,7 +86,6 @@ ASOOM ASOOMWrapper::createASOOM(ros::NodeHandle& nh) {
 
   // Parameters for Map
   Map::Params map_params;
-  semantics_manager::MapConfig map_config(semantics_manager::getMapPath(world_config_path));
   map_params.resolution = map_config.resolution;
   nh.param<float>("map_buffer_size_m", map_params.buffer_size_m, 50);
   nh.param<float>("map_req_point_density", map_params.req_point_density, 500);
@@ -104,10 +102,10 @@ ASOOM ASOOMWrapper::createASOOM(ros::NodeHandle& nh) {
     "[ROS] world_config_path: " << world_config_path << std::endl <<
     "[ROS] classes_path: " << asoom_params.classes_path << std::endl <<
     "[ROS] resolution: " << map_params.resolution << std::endl << 
+    "[ROS] gps_origin (lat, long): " << map_config.fixed_origin_gps.transpose() << std::endl <<
     "[ROS] ===============================" << std::endl <<
     "[ROS] require_imgs: " << require_imgs_ << std::endl <<
     "[ROS] use_gps_stamp: " << use_gps_stamp_ << std::endl <<
-    "[ROS] gps_origin (lat, long): " << gps_origin_latlong.transpose() << std::endl <<
     "[ROS] ros_pub_period_ms: " << ros_pub_period_ms_ << std::endl <<
     "[ROS] pgo_thread_period_ms: " << asoom_params.pgo_thread_period_ms << std::endl <<
     "[ROS] stereo_thread_period_ms: " << asoom_params.stereo_thread_period_ms << std::endl <<
