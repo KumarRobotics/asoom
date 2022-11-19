@@ -32,6 +32,7 @@ ASOOM ASOOMWrapper::createASOOM(ros::NodeHandle& nh) {
   }
 
   nh.param<float>("ros_pub_period_ms", ros_pub_period_ms_, 1000);
+  nh.param<float>("keyframe_pub_period_ms", keyframe_pub_period_ms_, 1000);
 
   // Top level parameters
   ASOOM::Params asoom_params;
@@ -107,6 +108,7 @@ ASOOM ASOOMWrapper::createASOOM(ros::NodeHandle& nh) {
     "[ROS] require_imgs: " << require_imgs_ << std::endl <<
     "[ROS] use_gps_stamp: " << use_gps_stamp_ << std::endl <<
     "[ROS] ros_pub_period_ms: " << ros_pub_period_ms_ << std::endl <<
+    "[ROS] keyframe_pub_period_ms: " << keyframe_pub_period_ms_ << std::endl <<
     "[ROS] pgo_thread_period_ms: " << asoom_params.pgo_thread_period_ms << std::endl <<
     "[ROS] stereo_thread_period_ms: " << asoom_params.stereo_thread_period_ms << std::endl <<
     "[ROS] map_thread_period_ms: " << asoom_params.map_thread_period_ms << std::endl <<
@@ -182,7 +184,10 @@ void ASOOMWrapper::initialize() {
   map_sem_img_viz_pub_ = nh_.advertise<sensor_msgs::Image>("map_sem_img_viz", 1);
   map_sem_img_center_pub_ = nh_.advertise<geometry_msgs::PointStamped>("map_sem_img_center", 1);
 
-  output_timer_ = nh_.createTimer(ros::Duration(ros_pub_period_ms_/1000), &ASOOMWrapper::outputCallback, this);
+  output_timer_ = nh_.createTimer(
+      ros::Duration(ros_pub_period_ms_/1000), &ASOOMWrapper::outputCallback, this);
+  keyframe_repub_timer_ = nh_.createTimer(
+      ros::Duration(keyframe_pub_period_ms_/1000), &ASOOMWrapper::publishKeyframeImgs, this);
 }
 
 std::vector<Eigen::Vector3d> ASOOMWrapper::initFrustumPts(float scale) {
@@ -223,12 +228,21 @@ void ASOOMWrapper::outputCallback(const ros::TimerEvent& event) {
   publishRecentPose(time);
   publishUTMTransform(time);
   publishMap(time);
-  publishKeyframeImgs();
   auto end_t = high_resolution_clock::now();
 
   std::cout << "\033[32m" << "[ROS] Output Visualization: " <<
       duration_cast<microseconds>(end_t - start_t).count() << "us" << "\033[0m" << std::endl
         << std::flush;
+}
+
+void ASOOMWrapper::publishKeyframeImgs(const ros::TimerEvent& event) {
+  const auto keyframes = asoom_.getNewKeyframes();
+
+  for (const auto& key : keyframes) {
+    std_msgs::Header header;
+    header.stamp.fromNSec(key.first);
+    keyframe_img_pub_.publish(cv_bridge::CvImage(header, "bgr8", key.second).toImageMsg());
+  }
 }
 
 void ASOOMWrapper::publishPoseGraphViz(const ros::Time& time) {
@@ -401,16 +415,6 @@ void ASOOMWrapper::publishMap(const ros::Time& time) {
   map_color_img_pub_.publish(color_msg);
   map_sem_img_pub_.publish(msg);
   map_sem_img_viz_pub_.publish(viz_msg);
-}
-
-void ASOOMWrapper::publishKeyframeImgs() {
-  const auto keyframes = asoom_.getNewKeyframes();
-
-  for (const auto& key : keyframes) {
-    std_msgs::Header header;
-    header.stamp.fromNSec(key.first);
-    keyframe_img_pub_.publish(cv_bridge::CvImage(header, "bgr8", key.second).toImageMsg());
-  }
 }
 
 void ASOOMWrapper::poseImgCallback(const geometry_msgs::PoseStamped::ConstPtr& pose_msg,

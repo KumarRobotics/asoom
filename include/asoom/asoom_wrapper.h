@@ -33,13 +33,13 @@ class ASOOMWrapper {
 
     //! Called to publish output
     void outputCallback(const ros::TimerEvent& event);
+    void publishKeyframeImgs(const ros::TimerEvent& event);
 
     void publishPoseGraphViz(const ros::Time& time);
     void publishRecentPointCloud(const ros::Time& time);
     void publishRecentPose(const ros::Time& time);
     void publishUTMTransform(const ros::Time& time);
     void publishMap(const ros::Time& time);
-    void publishKeyframeImgs();
 
     //! Callback for VO.  Pass empty image pointer if only tracking pose
     void poseImgCallback(const geometry_msgs::PoseStamped::ConstPtr& pose_msg,
@@ -77,6 +77,9 @@ class ASOOMWrapper {
     //! Period with which to publish stuff to ROS
     float ros_pub_period_ms_;
 
+    //! Period with which to republish keyframes for seg
+    float keyframe_pub_period_ms_;
+
     //! If true, sub to synchronized images and poses
     bool require_imgs_;
 
@@ -100,6 +103,9 @@ class ASOOMWrapper {
 
     //! Timer to loop and publish visualizations and the map
     ros::Timer output_timer_;
+
+    //! Timer to republish keyframes for seg
+    ros::Timer keyframe_repub_timer_;
 
     //! Vector of points specifying camera frustum viz
     const std::vector<Eigen::Vector3d> frustum_pts_;
