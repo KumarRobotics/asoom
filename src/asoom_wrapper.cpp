@@ -24,7 +24,7 @@ ASOOM ASOOMWrapper::createASOOM(ros::NodeHandle& nh) {
   nh.param<bool>("use_semantics", use_semantics_, false);
   nh.param<bool>("require_imgs", require_imgs_, true);
   nh.param<bool>("use_gps_stamp", use_gps_stamp_, true);
-  if (map_config.have_fixed_origin) {
+  if (!map_config.have_fixed_origin) {
     utm_origin_ = Eigen::Vector2d::Zero();
   } else {
     int zone;
