@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
   <arg name="output" default="screen"/>
+  <arg name="world_config_path" default="$(find semantics_manager)/config/config.yaml"/>
+
   <arg name="decompress" default="False"/>
   <arg name="orbslam" default="True"/>
 
@@ -10,8 +12,6 @@
   <arg name="erfnet_model_path" default="$(find erfnet_pytorch_ros)/models/model_generic.pth"/>
   <arg name="gpu" default="False"/>
   <arg name="erfnet_num_threads" default="6"/>
-
-  <arg name="world_config_path" default="$(find semantics_manager)/config/config.yaml"/>
 
   <arg name="require_imgs" default="True"/>
   <arg name="use_gps_stamp" default="False"/>
@@ -69,6 +69,7 @@
 
   <group if="$(arg use_semantics)">
     <node pkg="erfnet_pytorch_ros" type="erfnet_ros.py" name="erfnet_ros" output="$(arg output)">
+      <param name="world_config_path" value="$(arg world_config_path)"/>
       <param name="model_path" value="$(arg erfnet_model_path)"/>
       <param name="gpu" value="$(arg gpu)"/>
       <param name="num_threads" value="$(arg erfnet_num_threads)"/>
