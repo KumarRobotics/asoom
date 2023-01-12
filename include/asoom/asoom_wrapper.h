@@ -7,6 +7,7 @@
 #include <sensor_msgs/NavSatFix.h>
 #include <message_filters/time_synchronizer.h>
 #include <message_filters/subscriber.h>
+#include <image_transport/image_transport.h>
 
 #include "asoom/asoom.h"
 
@@ -71,6 +72,7 @@ class ASOOMWrapper {
      ***********************************************************/
 
     ros::NodeHandle nh_;
+    image_transport::ImageTransport it_;
 
     ASOOM asoom_;
 
@@ -96,10 +98,12 @@ class ASOOMWrapper {
     std::unique_ptr<message_filters::Subscriber<sensor_msgs::Image>> img_sync_sub_;
     std::unique_ptr<message_filters::TimeSynchronizer<geometry_msgs::PoseStamped, 
       sensor_msgs::Image>> pose_img_sync_sub_;
-    ros::Subscriber gps_sub_, pose_sub_, sem_sub_;
+    ros::Subscriber gps_sub_, pose_sub_;
+    image_transport::Subscriber sem_sub_;
     ros::Publisher trajectory_viz_pub_, recent_cloud_pub_, recent_key_pose_pub_, map_pub_, 
-      keyframe_img_pub_, map_color_img_pub_, map_sem_img_pub_, map_sem_img_viz_pub_, 
       map_sem_img_center_pub_;
+    image_transport::Publisher keyframe_img_pub_, map_color_img_pub_, map_sem_img_pub_, 
+      map_sem_img_viz_pub_;
 
     //! Timer to loop and publish visualizations and the map
     ros::Timer output_timer_;

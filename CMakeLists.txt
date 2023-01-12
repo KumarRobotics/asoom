@@ -22,6 +22,7 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   visualization_msgs
   tf2_ros
+  image_transport
   grid_map_core
   grid_map_ros
   grid_map_msgs

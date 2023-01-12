@@ -11,8 +11,11 @@
 #include "asoom/asoom_wrapper.h"
 #include "asoom/utils.h"
 
-ASOOMWrapper::ASOOMWrapper(ros::NodeHandle& nh)
-  : frustum_pts_(initFrustumPts(1)), nh_(nh), asoom_(createASOOM(nh)) {}
+ASOOMWrapper::ASOOMWrapper(ros::NodeHandle& nh) :
+  frustum_pts_(initFrustumPts(1)), 
+  nh_(nh), 
+  it_(nh_),
+  asoom_(createASOOM(nh)) {}
 
 ASOOM ASOOMWrapper::createASOOM(ros::NodeHandle& nh) {
   // Path to world configuration
@@ -166,10 +169,10 @@ void ASOOMWrapper::initialize() {
   }
 
   if (use_semantics_ && require_imgs_) {
-    sem_sub_ = nh_.subscribe<sensor_msgs::Image>("sem", 10, &ASOOMWrapper::semCallback, this);
+    sem_sub_ = it_.subscribe("sem", 10, &ASOOMWrapper::semCallback, this);
 
     // Want large buffer, since will be all keyframes from the past sec or so
-    keyframe_img_pub_ = nh_.advertise<sensor_msgs::Image>("keyframe_img", 100);
+    keyframe_img_pub_ = it_.advertise("keyframe_img", 100);
   }
 
   gps_sub_ = nh_.subscribe<sensor_msgs::NavSatFix>("gps", 10, &ASOOMWrapper::gpsCallback, this);
@@ -179,9 +182,9 @@ void ASOOMWrapper::initialize() {
   recent_key_pose_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("recent_key_pose", 1);
   map_pub_ = nh_.advertise<grid_map_msgs::GridMap>("map", 1);
 
-  map_color_img_pub_ = nh_.advertise<sensor_msgs::Image>("map_color_img", 1);
-  map_sem_img_pub_ = nh_.advertise<sensor_msgs::Image>("map_sem_img", 1);
-  map_sem_img_viz_pub_ = nh_.advertise<sensor_msgs::Image>("map_sem_img_viz", 1);
+  map_color_img_pub_ = it_.advertise("map_color_img", 1);
+  map_sem_img_pub_ = it_.advertise("map_sem_img", 1);
+  map_sem_img_viz_pub_ = it_.advertise("map_sem_img_viz", 1);
   map_sem_img_center_pub_ = nh_.advertise<geometry_msgs::PointStamped>("map_sem_img_center", 1);
 
   output_timer_ = nh_.createTimer(

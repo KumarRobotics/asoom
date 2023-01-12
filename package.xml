@@ -58,6 +58,7 @@
   <depend>visualization_msgs</depend>
   <depend>tf2_ros</depend>
   <depend>yaml-cpp</depend>
+  <depend>image_transport</depend>
   <depend>grid_map_core</depend>
   <depend>grid_map_ros</depend>
   <depend>grid_map_msgs</depend>

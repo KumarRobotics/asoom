@@ -49,6 +49,10 @@
     <remap from="~pose" to="/orbslam3_ros_node/pose"/>
     <remap from="~gps" to="/ublox/fix"/>
     <remap from="~img" to="/ovc/rgb/image_color"/>
+   
+    <!-- Want lossless compression for semantics -->
+    <param name="map_sem_img/compressed/format" value="png"/>
+    <param name="map_sem_img_viz/compressed/format" value="png"/>
 
     <!-- Params -->
     <param name="world_config_path" value="$(arg world_config_path)"/>
