@@ -44,11 +44,17 @@
   <arg name="map_dist_for_rebuild" default="10"/>
   <arg name="map_ang_for_rebuild" default="0.1"/>
 
+  <arg name="pose_topic" default="/orbslam3_ros_node/pose"/>
+  <arg name="gps_topic" default="/ublox/fix"/>
+  <arg name="img_topic" default="/ovc/rgb/image_color"/>
+  <arg name="sem_topic" default="~sem"/>
+
   <node pkg="asoom" type="asoom_node" name="asoom" output="$(arg output)">
     <!-- Remappings -->
-    <remap from="~pose" to="/orbslam3_ros_node/pose"/>
-    <remap from="~gps" to="/ublox/fix"/>
-    <remap from="~img" to="/ovc/rgb/image_color"/>
+    <remap from="~pose" to="$(arg pose_topic)"/>
+    <remap from="~gps" to="$(arg gps_topic)"/>
+    <remap from="~img" to="$(arg img_topic)"/>
+    <remap from="~sem" to="$(arg sem_topic)"/>
    
     <!-- Want lossless compression for semantics -->
     <param name="map_sem_img/compressed/format" value="png"/>
