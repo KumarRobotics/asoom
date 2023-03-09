@@ -438,6 +438,11 @@ void ASOOMWrapper::gpsCallback(const sensor_msgs::NavSatFix::ConstPtr& gps_msg) 
   }
   // PGO works better with smaller numbers instead of in utm frame directly
   gps.head<2>() -= utm_origin_;
+  
+  if (gps.head<2>().norm() > 10e3) {
+    // We are further than 10km away from the origin.  Seems suspicious
+    std::cout << "\033[32m" << "[ROS] GPS far away from origin" << std::endl << std::flush;
+  }
 
   auto stamp = gps_msg->header.stamp;
   if (!use_gps_stamp_) {
