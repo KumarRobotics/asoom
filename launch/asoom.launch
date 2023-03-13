@@ -22,7 +22,7 @@
   <arg name="pose_graph_num_frames_init" default="5"/>
   <arg name="pose_graph_num_frames_opt" default="30"/>
 
-  <arg name="rectifier_calib_path" default="$(find asoom)/config/titan_wide.yaml"/>
+  <arg name="rectifier_calib_path" default="$(find asoom)/config/titan_wide2.yaml"/>
   <arg name="rectifier_scale" default="0.5"/>
 
   <arg name="stereo_use_sgbm" default="False"/>
