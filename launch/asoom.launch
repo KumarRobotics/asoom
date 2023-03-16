@@ -45,7 +45,7 @@
   <arg name="map_ang_for_rebuild" default="0.1"/>
 
   <arg name="pose_topic" default="/orbslam3_ros_node/pose"/>
-  <arg name="gps_topic" default="/ublox/fix"/>
+  <arg name="gps_topic" default="/mavros/global_position/raw/fix"/>
   <arg name="img_topic" default="/ovc/rgb/image_color"/>
   <arg name="sem_topic" default="~sem"/>
 
