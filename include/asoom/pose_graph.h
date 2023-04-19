@@ -1,5 +1,6 @@
 #pragma once
 
+#define SLOW_BUT_CORRECT_BETWEENFACTOR
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/inference/Symbol.h>
