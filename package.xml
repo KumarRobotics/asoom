@@ -63,7 +63,7 @@
   <depend>grid_map_ros</depend>
   <depend>grid_map_msgs</depend>
   <depend>semantics_manager</depend>
-
+  <depend>rviz_textured_quads</depend>
   <test_depend>gtest</test_depend>
 
   <!-- The export tag contains other, unspecified, tags -->

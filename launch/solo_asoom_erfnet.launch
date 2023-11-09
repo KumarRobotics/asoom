@@ -1,4 +1,5 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="utf-8"?>
+
 <launch>
   <arg name="output" default="screen"/>
   <arg name="world_config_path" default="$(find semantics_manager)/config/config.yaml"/>
@@ -11,7 +12,7 @@
   <arg name="stereo_thread_period_ms" default="1000"/>
   <arg name="map_thread_period_ms" default="5000"/>
   <arg name="keyframe_dist_thresh_m" default="2"/>
-  <arg name="use_semantics" default="False"/>
+  <arg name="use_semantics" default="True"/>
   <arg name="semantics_colored" default="False"/>
 
   <arg name="pose_graph_between_sigmas_pos" default="0.05"/>
@@ -22,7 +23,7 @@
   <arg name="pose_graph_num_frames_init" default="5"/>
   <arg name="pose_graph_num_frames_opt" default="30"/>
 
-  <arg name="rectifier_calib_path" default="$(find asoom)/config/aerial_pennov.yaml"/>
+  <arg name="rectifier_calib_path" default="$(find asoom)/config/camp_buckner_120.yaml"/>
   <arg name="rectifier_scale" default="0.5"/>
 
   <arg name="stereo_use_sgbm" default="False"/>
@@ -46,12 +47,17 @@
 
   <arg name="pose_topic" default="/orbslam3_ros_node/pose"/>
   <arg name="gps_topic" default="/ublox/fix"/>
-  <arg name="img_topic" default="/ovc/rgb/image_color/compressed"/>
+  <arg name="img_topic" default="/ovc/rgb/image_raw"/>
   <arg name="sem_topic" default="~sem"/>
 
-  <node pkg="image_transport" type="republish" name="republish" output="screen" args="compressed in:=/ovc/rgb/image_color out:=/asoom/img"/>
+  <node pkg="image_transport" type="republish" name="republish" output="screen" args="raw in:=/ovc/rgb/image_raw out:=/asoom/img"/>
+  <group ns="image_raw">
+    <rosparam param="disable_pub_plugin">
+      - 'image_transport/compressedDepth'
+    </rosparam>
+  </group>
 
-  <node pkg="asoom" type="asoom_node" name="asoom" output="$(arg output)">
+  <node pkg="asoom" type="asoom_node" name="asoom" output="$(arg output)"> <!--launch-prefix="gdb -ex run args"-->
     <!-- Remappings -->
     <remap from="~pose" to="$(arg pose_topic)"/>
     <remap from="~gps" to="$(arg gps_topic)"/>
@@ -106,5 +112,7 @@
     <param name="map_dist_for_rebuild" value="$(arg map_dist_for_rebuild)"/>
     <param name="map_ang_for_rebuild" value="$(arg map_ang_for_rebuild)"/>
   </node>
-
+  
+  <include file="$(find erfnet_pytorch_ros)/launch/erfnet_ros.launch"/>
+  
 </launch>

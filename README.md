@@ -6,3 +6,6 @@
 * grid_map (Forked version) https://github.com/iandouglas96/grid_map
 * GTSAM (Tested with 4.0.3)
 * ROS1 (Tested with Melodic)
+
+## Bugs
+* setting `semantics_colored` causes an error

@@ -22,7 +22,7 @@
   <arg name="pose_graph_num_frames_init" default="5"/>
   <arg name="pose_graph_num_frames_opt" default="30"/>
 
-  <arg name="rectifier_calib_path" default="$(find asoom)/config/aerial_pennov.yaml"/>
+  <arg name="rectifier_calib_path" default="$(find asoom)/config/camp_buckner_120.yaml"/>
   <arg name="rectifier_scale" default="0.5"/>
 
   <arg name="stereo_use_sgbm" default="False"/>
@@ -46,10 +46,10 @@
 
   <arg name="pose_topic" default="/orbslam3_ros_node/pose"/>
   <arg name="gps_topic" default="/ublox/fix"/>
-  <arg name="img_topic" default="/ovc/rgb/image_color/compressed"/>
+  <arg name="img_topic" default="/ovc/rgb/image_raw"/>
   <arg name="sem_topic" default="~sem"/>
 
-  <node pkg="image_transport" type="republish" name="republish" output="screen" args="compressed in:=/ovc/rgb/image_color out:=/asoom/img"/>
+  <node pkg="image_transport" type="republish" name="republish" output="screen" args="raw in:=/ovc/rgb/image_raw out:=/asoom/img"/>
 
   <node pkg="asoom" type="asoom_node" name="asoom" output="$(arg output)">
     <!-- Remappings -->

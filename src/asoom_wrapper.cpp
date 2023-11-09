@@ -423,6 +423,7 @@ void ASOOMWrapper::publishMap(const ros::Time& time) {
 void ASOOMWrapper::poseImgCallback(const geometry_msgs::PoseStamped::ConstPtr& pose_msg,
     const sensor_msgs::Image::ConstPtr& img_msg)
 {
+  std::cout << "[ROS] Revieved a synced message" << std::endl;
   Eigen::Isometry3d pose = ROS2Eigen(*pose_msg);
   cv::Mat img;
   if (img_msg) {
